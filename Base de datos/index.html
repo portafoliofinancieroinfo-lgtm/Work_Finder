@@ -1,0 +1,987 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Finder Work</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: libro mayor de postulaciones. Una barra de folio arriba, pestañas, y hojas de trabajo; el detalle se abre como un folio lateral. */
+:root {
+  --paper: #eef1f5;
+  --sheet: #ffffff;
+  --ink: #15203b;
+  --ink-2: #4c5773;
+  --ink-3: #5f6a82;
+  --rule: #d9dee8;
+  --accent: #2446b5;
+  --accent-soft: #e3e9fb;
+  --due: #955300;
+  --due-soft: #fbeedb;
+  --ok: #1b7549;
+  --ok-soft: #dcf1e5;
+  --bad: #b3261e;
+  --bad-soft: #fbe3e1;
+  --shadow: 0 1px 2px rgba(21,32,59,.06), 0 8px 24px rgba(21,32,59,.08);
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --r: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0d121d; --sheet: #151c2b; --ink: #e4e8f1; --ink-2: #a4aec5; --ink-3: #8590a9;
+    --rule: #262f45; --accent: #92a9ff; --accent-soft: #1d2747; --due: #f0a746; --due-soft: #33240f;
+    --ok: #5cc794; --ok-soft: #12291f; --bad: #ff8d84; --bad-soft: #3a1714;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0d121d; --sheet: #151c2b; --ink: #e4e8f1; --ink-2: #a4aec5; --ink-3: #8590a9;
+  --rule: #262f45; --accent: #92a9ff; --accent-soft: #1d2747; --due: #f0a746; --due-soft: #33240f;
+  --ok: #5cc794; --ok-soft: #12291f; --bad: #ff8d84; --bad-soft: #3a1714;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35); color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+section.view > * { min-width: 0; }
+body { background: var(--paper); color: var(--ink); font: 15px/1.5 var(--f-body); }
+.wrap { max-width: 1240px; margin: 0 auto; padding-inline: 16px; padding-block: 0 48px; }
+h1, h2, h3 { font-family: var(--f-display); font-weight: 700; margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+h2 { font-size: 1.15rem; }
+h3 { font-size: 1rem; }
+.num, .mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--ink-2); }
+.small { font-size: .82rem; }
+a { color: var(--accent); }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Folio superior */
+.folio { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--paper); border-bottom: 1px solid var(--rule); }
+.folio-in { max-width: 1240px; margin: 0 auto; padding: 14px 16px 0; display: grid; gap: 10px; }
+.brand { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; justify-content: space-between; }
+.brand h1 { font-size: 1.45rem; }
+.brand h1 span { color: var(--accent); }
+.brand .meta { font-family: var(--f-mono); font-size: .78rem; color: var(--ink-2); text-transform: uppercase; letter-spacing: .06em; }
+.tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+.tabs button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 8px 12px 10px; color: var(--ink-2); font-weight: 600; white-space: nowrap; }
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.tabs .count { font-family: var(--f-mono); font-size: .72rem; background: var(--due-soft); color: var(--due); border-radius: 99px; padding: 1px 6px; margin-left: 4px; }
+
+.banner { margin-top: 16px; padding: 12px 14px; border-radius: var(--r); background: var(--due-soft); color: var(--ink); border: 1px solid color-mix(in srgb, var(--due) 30%, transparent); }
+.banner.bad { background: var(--bad-soft); border-color: color-mix(in srgb, var(--bad) 30%, transparent); }
+
+/* Hojas */
+section.view { display: grid; gap: 22px; padding-top: 20px; }
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: var(--r); overflow: hidden; }
+.kpi { background: var(--sheet); padding: 14px 16px; display: grid; gap: 2px; }
+.kpi .v { font-family: var(--f-mono); font-size: 1.6rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+.kpi .l { font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-2); }
+@media (max-width: 720px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.block { display: grid; gap: 10px; min-width: 0; }
+.block-head { display: flex; align-items: baseline; gap: 10px; justify-content: space-between; flex-wrap: wrap; }
+.block-head .hint { font-size: .82rem; color: var(--ink-2); }
+.cols { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+@media (max-width: 900px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+
+.list { background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--r); }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 14px; padding: 12px 14px; border-top: 1px solid var(--rule); align-items: center; }
+.row:first-child { border-top: 0; }
+.row .t { font-weight: 600; min-width: 0; }
+.row .s { color: var(--ink-2); font-size: .86rem; min-width: 0; overflow-wrap: anywhere; }
+.row .acts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.row.clickable { cursor: pointer; }
+.row.clickable:hover { background: color-mix(in srgb, var(--accent-soft) 45%, transparent); }
+@media (max-width: 560px) { .row { grid-template-columns: minmax(0, 1fr); } .row .acts { justify-content: flex-start; } }
+.empty { padding: 18px 16px; color: var(--ink-2); font-size: .9rem; }
+
+.btn { border: 1px solid var(--rule); background: var(--sheet); border-radius: var(--r); padding: 6px 11px; font-size: .86rem; font-weight: 600; }
+.btn:hover { border-color: var(--ink-3); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--sheet); }
+.btn.ok { background: var(--ok); border-color: var(--ok); color: var(--sheet); }
+.btn.warn { color: var(--bad); }
+.btn:disabled { opacity: .5; cursor: default; }
+
+.chip { display: inline-flex; align-items: center; gap: 4px; border-radius: 99px; padding: 1px 8px; font-size: .74rem; font-weight: 600; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
+.chip.due { background: var(--due-soft); color: var(--due); }
+.chip.bad { background: var(--bad-soft); color: var(--bad); }
+.chip.ok { background: var(--ok-soft); color: var(--ok); }
+.chip.plain { background: transparent; border: 1px solid var(--rule); color: var(--ink-2); }
+.chips { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+.score { font-family: var(--f-mono); font-weight: 500; font-size: .8rem; min-width: 2.6em; text-align: center; border-radius: 4px; padding: 1px 5px; background: var(--accent-soft); color: var(--accent); }
+.score.hi { background: var(--ok-soft); color: var(--ok); }
+.score.lo { background: var(--paper); color: var(--ink-3); }
+
+/* Pipeline */
+.filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.filters input[type=search], .filters select { border: 1px solid var(--rule); background: var(--sheet); border-radius: var(--r); padding: 6px 10px; min-width: 0; }
+.filters input[type=search] { flex: 1 1 220px; }
+.board { overflow-x: auto; padding-bottom: 8px; min-width: 0; max-width: 100%; }
+.board-in { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(250px, 1fr); gap: 12px; min-width: min-content; }
+.lane { background: color-mix(in srgb, var(--sheet) 55%, var(--paper)); border: 1px solid var(--rule); border-radius: var(--r); display: grid; align-content: start; gap: 8px; padding: 10px; min-height: 120px; }
+.lane h3 { font-size: .8rem; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-2); display: flex; justify-content: space-between; font-family: var(--f-body); font-weight: 600; }
+.card { background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--r); padding: 9px 10px; display: grid; gap: 3px; text-align: left; width: 100%; }
+.card:hover { border-color: var(--ink-3); }
+.card .e { font-weight: 600; font-size: .9rem; overflow-wrap: anywhere; }
+.card .c { color: var(--ink-2); font-size: .82rem; overflow-wrap: anywhere; }
+.card .f { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 4px; font-size: .74rem; color: var(--ink-3); }
+.card.flag { box-shadow: inset 3px 0 0 var(--due); }
+.card.flag.crit { box-shadow: inset 3px 0 0 var(--bad); }
+
+/* Tablas */
+.tbl-wrap { overflow-x: auto; background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--r); }
+table { border-collapse: collapse; width: 100%; font-size: .88rem; }
+th, td { text-align: left; padding: 9px 12px; border-top: 1px solid var(--rule); vertical-align: top; }
+th { border-top: 0; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-2); font-weight: 600; background: color-mix(in srgb, var(--paper) 50%, var(--sheet)); }
+td.n, th.n { text-align: right; font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+tr.clickable { cursor: pointer; }
+tr.clickable:hover td { background: color-mix(in srgb, var(--accent-soft) 45%, transparent); }
+
+/* Barras de métricas */
+.bars { display: grid; gap: 10px; background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--r); padding: 14px; }
+.bar-row { display: grid; grid-template-columns: 130px minmax(0, 1fr) 92px; gap: 10px; align-items: center; font-size: .86rem; }
+.bar-track { position: relative; height: 18px; background: var(--paper); border-radius: 3px; overflow: hidden; }
+.bar-fill { position: absolute; inset: 0 auto 0 0; background: color-mix(in srgb, var(--accent) 28%, transparent); }
+.bar-fill.adv { background: var(--accent); }
+.bar-row .v { font-family: var(--f-mono); font-variant-numeric: tabular-nums; text-align: right; font-size: .8rem; }
+.legend { display: flex; gap: 14px; font-size: .78rem; color: var(--ink-2); flex-wrap: wrap; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+@media (max-width: 560px) { .bar-row { grid-template-columns: 90px minmax(0, 1fr) 76px; } }
+
+/* Formularios */
+.form { display: grid; gap: 12px; background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--r); padding: 16px; }
+.caso { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; border-bottom: 1px solid var(--rule); padding-bottom: 12px; }
+.caso label.f { flex: 1 1 160px; }
+.caso label.f.palabras { flex: 1 1 100%; }
+.caso label.f.palabras textarea { min-height: 52px; }
+.fgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+label.f { display: grid; gap: 4px; font-size: .78rem; color: var(--ink-2); font-weight: 600; }
+label.f input, label.f select, label.f textarea { border: 1px solid var(--rule); background: var(--paper); border-radius: var(--r); padding: 7px 9px; font-size: .92rem; color: var(--ink); font-weight: 400; min-width: 0; width: 100%; }
+label.f textarea { min-height: 200px; resize: vertical; line-height: 1.5; font-family: var(--f-body); }
+label.chk { display: flex; gap: 8px; align-items: center; font-size: .9rem; }
+
+/* Folio lateral */
+.scrim { position: fixed; inset: 0; background: rgba(8,12,22,.4); z-index: 40; }
+.drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(620px, 100%); z-index: 41; background: var(--sheet); box-shadow: var(--shadow); overflow-y: auto; padding: calc(16px + env(safe-area-inset-top, 0px)) 20px calc(28px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 18px; align-content: start; }
+.drawer .dh { display: flex; justify-content: space-between; gap: 12px; align-items: start; }
+.drawer .dh h2 { font-size: 1.3rem; }
+.dsec { display: grid; gap: 8px; border-top: 1px solid var(--rule); padding-top: 14px; }
+.dsec > h3 { font-size: .74rem; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-2); font-family: var(--f-body); font-weight: 600; }
+.kv { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 4px 12px; font-size: .9rem; }
+.kv dt { color: var(--ink-2); }
+.kv dd { margin: 0; overflow-wrap: anywhere; }
+.breakdown { display: grid; gap: 5px; }
+.bd { display: grid; grid-template-columns: 96px minmax(0, 1fr) 54px; gap: 8px; align-items: center; font-size: .82rem; }
+.bd .bar-track { height: 10px; }
+.timeline { display: grid; gap: 0; }
+.tl { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 10px; padding: 7px 0; border-top: 1px dashed var(--rule); font-size: .86rem; }
+.tl:first-child { border-top: 0; }
+.tl .d { font-family: var(--f-mono); font-size: .76rem; color: var(--ink-2); padding-top: 2px; }
+.tl .k { font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); font-weight: 600; }
+.confirm { border: 1px solid var(--due); background: var(--due-soft); border-radius: var(--r); padding: 12px; display: grid; gap: 8px; }
+.confirm.bad { border-color: var(--bad); background: var(--bad-soft); }
+.bigscore { font-family: var(--f-mono); font-size: 2.2rem; font-weight: 500; line-height: 1; }
+
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 60; background: var(--ink); color: var(--sheet); padding: 10px 16px; border-radius: var(--r); font-size: .9rem; box-shadow: var(--shadow); max-width: calc(100% - 32px); }
+.toast.bad { background: var(--bad); }
+@media (prefers-reduced-motion: no-preference) { .drawer { animation: slide .18s ease-out; } @keyframes slide { from { transform: translateX(24px); opacity: .6; } } }
+</style>
+
+<header class="folio">
+  <div class="folio-in">
+    <div class="brand">
+      <h1>Finder <span>Work</span></h1>
+      <div class="meta" id="folio-meta">CRM de postulaciones</div>
+    </div>
+    <nav class="tabs" role="tablist" id="tabs">
+      <button role="tab" data-view="hoy" aria-selected="true" id="tab-hoy">Hoy</button>
+      <button role="tab" data-view="pipeline" aria-selected="false" id="tab-pipeline">Pipeline</button>
+      <button role="tab" data-view="empresas" aria-selected="false" id="tab-empresas">Empresas</button>
+      <button role="tab" data-view="metricas" aria-selected="false" id="tab-metricas">Métricas</button>
+      <button role="tab" data-view="ajustes" aria-selected="false" id="tab-ajustes">Ajustes</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="banner"></div>
+  <section class="view" id="v-hoy">
+    <div class="list"><div class="empty">Cargando tu libro de postulaciones… Aquí aparecen las vacantes para aprobar, los correos listos para enviar y las acciones del día.</div></div>
+  </section>
+  <section class="view" id="v-pipeline" hidden></section>
+  <section class="view" id="v-empresas" hidden></section>
+  <section class="view" id="v-metricas" hidden></section>
+  <section class="view" id="v-ajustes" hidden></section>
+</main>
+<div id="overlay"></div>
+<div id="toast-slot"></div>
+
+<script src="motor.js"></script>
+<script>
+(function () {
+  "use strict";
+  const Motor = window.Motor;
+
+  // ---------- Constantes ----------
+  const ETAPAS = [
+    ["descubierta", "Descubierta"], ["por_aprobar", "Por aprobar"], ["aprobada", "Aprobada"],
+    ["postulada", "Postulada"], ["hv_vista", "HV vista"], ["en_proceso", "En proceso"],
+    ["oferta", "Oferta"], ["cerrada", "Cerrada"]
+  ];
+  const ETAPA_NOMBRE = Object.fromEntries(ETAPAS);
+  const ORDEN = ETAPAS.map(e => e[0]);
+  const RESULTADOS = {
+    contratado: "Contratado", no_seleccionado: "No seleccionado", finalizado: "Proceso finalizado",
+    sin_respuesta: "Sin respuesta", vacante_cerrada: "Vacante cerrada", descartada: "Descartada", archivada: "Archivada"
+  };
+  const ALERTAS = {
+    posible_estafa: ["Posible estafa", "bad"], conflicto_estado: ["Estado en conflicto", "bad"],
+    vacante_cerrada: ["Vacante ya cerrada", "due"], verificar_dominio: ["Verificar dominio", "due"],
+    verificar_empresa: ["Verificar empresa", "due"], verificar_modalidad: ["Verificar modalidad", "due"],
+    preguntas_pendientes: ["Preguntas pendientes", "due"], entrevista_declinada: ["Entrevista declinada", "due"],
+    no_aplica: ["No aplica", "bad"]
+  };
+  const TIPOS_HIST = {
+    postulacion: "Postulación", correo_enviado: "Correo enviado", respuesta: "Respuesta", entrevista: "Entrevista",
+    cambio_etapa: "Etapa", nota: "Nota", llamada: "Llamada", accion: "Acción"
+  };
+  const NIVELES = ["auxiliar", "profesional", "senior", "gerencia", "docencia"];
+  const PERFILES = Object.keys(Motor.PUNTOS_PERFIL);
+  const MODALIDADES = [["remoto", "Remoto"], ["hibrido", "Híbrido"], ["presencial", "Presencial"], ["no_especificado", "No especificada"]];
+  const CONTRATOS = [["tiempo_completo", "Tiempo completo"], ["parcial", "Medio tiempo o por servicio"]];
+  const SIN_NOVEDAD = "Sin contacto directo";
+
+  // ---------- Estado ----------
+  const S = {
+    db: null, downloads: null,
+    vac: new Map(), emp: new Map(), bor: new Map(), ajustes: null, corrida: null,
+    cargado: { vac: false, emp: false, bor: false },
+    view: "hoy", filtros: { q: "", perfil: "", portal: "", cerradas: false },
+    panel: null, // {tipo:'vacante'|'borrador', id}
+    confirm: null, ocupado: false
+  };
+
+  // ---------- Utilidades ----------
+  function el(tag, attrs, ...kids) {
+    const n = document.createElement(tag);
+    if (attrs) for (const k in attrs) {
+      const v = attrs[k];
+      if (v == null || v === false) continue;
+      if (k === "class") n.className = v;
+      else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+      else if (k === "html") continue;
+      else n.setAttribute(k, v === true ? "" : v);
+    }
+    for (const k of kids.flat(Infinity)) {
+      if (k == null || k === false) continue;
+      n.append(k.nodeType ? k : document.createTextNode(String(k)));
+    }
+    return n;
+  }
+  function hoy() { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); }
+  function masDias(iso, n) { const d = new Date((iso || hoy()) + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+  const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+  function fFecha(iso) { if (!iso) return "—"; const [y, m, d] = iso.split("-"); return +d + " " + MESES[+m - 1] + (y !== hoy().slice(0, 4) ? " " + y : ""); }
+  function cop(n) { if (n == null || isNaN(n)) return "—"; return (n < 0 ? "−$" : "$") + Math.abs(Math.round(n)).toLocaleString("es-CO"); }
+  function dias(desde) { return Motor.diasEntre(desde, hoy()); }
+  function ajustes() { return Object.assign({}, Motor.AJUSTES_BASE, S.ajustes || {}); }
+  function calc(v) { return Motor.puntaje(v, ajustes(), hoy()); }
+  function scoreClass(t) { return t >= ajustes().umbralAprobar ? "score hi" : t < 40 ? "score lo" : "score"; }
+  function abierta(v) { return v.etapa !== "cerrada"; }
+  function alertaChips(v) { return (v.alertas || []).map(a => el("span", { class: "chip " + ((ALERTAS[a] || [a, "due"])[1]), "data-a": a }, (ALERTAS[a] || [a])[0])); }
+  function enlaceSeguro(u) { return /^https?:\/\//i.test(u || "") ? u : null; }
+  function nivelAlerta(v) { const a = v.alertas || []; if (!a.length) return ""; return a.some(x => (ALERTAS[x] || [])[1] === "bad") ? "flag crit" : "flag"; }
+  function sinNovedad(v) { return v.proximaAccion && (v.proximaAccion.texto || "").startsWith(SIN_NOVEDAD); }
+  function noRecomendado(b) { return (b.nota || "").toLowerCase().includes("no enviar"); }
+
+  let toastT = null;
+  function toast(msg, bad) {
+    const slot = document.getElementById("toast-slot");
+    slot.replaceChildren(el("div", { class: "toast" + (bad ? " bad" : ""), role: "status" }, msg));
+    clearTimeout(toastT); toastT = setTimeout(() => slot.replaceChildren(), bad ? 7000 : 3500);
+  }
+
+  // ---------- Escrituras ----------
+  // Con "_rev" en datos, servir.py no escribe si el registro cambió desde esa versión (code "conflict").
+  // reintentar = quien llama vuelve a leer y reintenta solo: no se muestra el aviso.
+  async function escribir(ruta, datos, crear, reintentar) {
+    if (!S.db) { toast("La base de datos no está disponible en esta vista.", true); throw new Error("sin db"); }
+    try {
+      const ref = S.db.doc(ruta);
+      if (crear) await ref.set(datos); else await ref.update(datos);
+    } catch (e) {
+      if (reintentar && e && e.code === "conflict") throw e;
+      toast(e && e.code === "not_found" ? "No se pudo guardar: ese registro ya no existe en la base."
+        : e && e.code === "conflict" ? "No se guardó: el registro cambió mientras lo editabas (una acción de Claude u otra pestaña). En unos segundos se recarga: vuelve a intentarlo."
+        : "No se pudo guardar. Revisa que \"Base de datos/servir.py\" siga abierto e intenta de nuevo.", true);
+      throw e;
+    }
+  }
+  function conHistorial(v, entrada) {
+    return (v.historial || []).concat([Object.assign({ fecha: hoy() }, entrada)]);
+  }
+  async function actualizarVacante(id, cambios, entrada) {
+    // Se relee antes de escribir: la copia en memoria puede ir atrasada frente a lo que escribió una acción de Claude,
+    // y el historial se reescribe entero. Con _rev, si algo escribió en medio, servir.py lo rechaza y se relee (3 intentos).
+    for (let intento = 1; ; intento++) {
+      try { return await escribirVacante(id, cambios, entrada, intento < 3); }
+      catch (e) { if (!(e && e.code === "conflict") || intento >= 3) throw e; }
+    }
+  }
+  async function escribirVacante(id, cambios, entrada, reintentar) {
+    const snap = S.db ? await S.db.doc("vacantes/" + id).get().catch(() => null) : null;
+    const v = snap && snap.exists ? snap.data() : S.vac.get(id); if (!v) return;
+    const datos = Object.assign({}, cambios);
+    if (entrada) datos.historial = conHistorial(v, entrada);
+    const nueva = Object.assign({}, v, datos);
+    const r = calc(nueva);
+    datos.puntaje = r.total; datos.neto = r.presupuesto.neto;
+    if (cambios.etapa && ORDEN.indexOf(cambios.etapa) > ORDEN.indexOf(v.etapaMax || "descubierta") && cambios.etapa !== "cerrada") datos.etapaMax = cambios.etapa;
+    datos.ultimaActividad = entrada ? hoy() : (v.ultimaActividad || hoy());
+    datos.actualizado = new Date().toISOString();
+    datos._rev = v._rev || 0;
+    await escribir("vacantes/" + id, datos, false, reintentar);
+  }
+  async function cambiarEtapa(id, etapa, resultado) {
+    const v = S.vac.get(id);
+    const cambios = { etapa: etapa, resultado: etapa === "cerrada" ? (resultado || v.resultado || "descartada") : null };
+    if (etapa === "cerrada") cambios.proximaAccion = null;
+    const txt = ETAPA_NOMBRE[v.etapa] + " → " + ETAPA_NOMBRE[etapa] + (etapa === "cerrada" ? " (" + RESULTADOS[cambios.resultado] + ")" : "");
+    await actualizarVacante(id, cambios, { tipo: "cambio_etapa", texto: txt + " · desde el CRM" });
+  }
+
+  // ---------- Base local (Base de datos/servir.py sobre Base de datos/finder.db) ----------
+  // Misma forma que usaba la página: collection().limit().orderBy().onSnapshot y doc().get/set/update/onSnapshot.
+  // ponytail: se refresca cada 5 s y después de cada escritura; otra pestaña abierta tarda hasta 5 s en ver un cambio.
+  async function dbLocal() {
+    try { if (!(await fetch("/api/config")).ok) return null; } catch (_) { return null; }
+    const subs = [];
+    const traer = async (col) => { const r = await fetch("/api/" + col); if (!r.ok) throw { code: "unavailable" }; return r.json(); };
+    let pendiente = null;
+    function refrescar() {
+      // Varias suscripciones o escrituras seguidas se juntan en una sola ronda de lecturas.
+      return pendiente || (pendiente = Promise.resolve().then(async () => {
+        pendiente = null;
+        const datos = {};
+        await Promise.all([...new Set(subs.map(s => s.col))].map(async c => { try { datos[c] = await traer(c); } catch (e) { datos[c] = e; } }));
+        for (const s of subs) {
+          const d = datos[s.col];
+          if (!Array.isArray(d)) { if (s.err) s.err(d); continue; }
+          const snap = s.armar(d), txt = JSON.stringify(snap);
+          if (txt !== s.ultimo) { s.ultimo = txt; s.next(s.envolver(snap)); }  // sin cambios no se repinta
+        }
+      }));
+    }
+    const docSnap = (fila) => ({ id: fila && fila.id, exists: !!fila, data: () => fila ? fila.data : undefined });
+    function consulta(col, o) {
+      return {
+        limit: (n) => consulta(col, Object.assign({}, o, { limit: n })),
+        orderBy: (campo, dir) => consulta(col, Object.assign({}, o, { campo, dir })),
+        onSnapshot(next, err) {
+          subs.push({ col, next, err, envolver: (filas) => ({ docs: filas.map(docSnap) }), armar: (filas) => {
+            let f = filas.slice();
+            if (o.campo) f.sort((a, b) => String(a.data[o.campo] ?? "").localeCompare(String(b.data[o.campo] ?? "")) * (o.dir === "desc" ? -1 : 1));
+            return o.limit ? f.slice(0, o.limit) : f;
+          } });
+          refrescar();
+        }
+      };
+    }
+    async function escribirDoc(ruta, op, data) {
+      const r = await fetch("/api/" + ruta, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ op, data }) });
+      if (!r.ok) throw { code: r.status === 404 ? "not_found" : r.status === 409 ? "conflict" : "unavailable" };
+      refrescar();
+    }
+    setInterval(refrescar, 5000);
+    return {
+      collection: (col) => consulta(col, {}),
+      doc(ruta) {
+        const [col, id] = ruta.split("/");
+        return {
+          get: async () => docSnap((await traer(col)).find(f => f.id === id)),
+          set: (data) => escribirDoc(ruta, "set", data),
+          update: (data) => escribirDoc(ruta, "update", data),
+          onSnapshot(next, err) { subs.push({ col, next, err, envolver: docSnap, armar: (filas) => filas.find(f => f.id === id) }); refrescar(); }
+        };
+      }
+    };
+  }
+
+  // ---------- Carga ----------
+  function bannerMsg(msg, bad) {
+    document.getElementById("banner").replaceChildren(msg ? el("div", { class: "banner" + (bad ? " bad" : "") }, msg) : "");
+  }
+  async function iniciar() {
+    render();
+    const db = await dbLocal();
+    if (!db) {
+      bannerMsg("No se pudo abrir la base del CRM. Abre el CRM con: python \"Base de datos/servir.py\"", true);
+      S.cargado = { vac: true, emp: true, bor: true }; render(); return;
+    }
+    S.db = db;
+    const err = (qué) => (e) => { if (e && e.code !== "revoked") bannerMsg("No se pudo leer " + qué + ". Recarga la página.", true); };
+    db.collection("vacantes").limit(1000).onSnapshot(s => { S.vac = new Map(s.docs.map(d => [d.id, d.data()])); S.cargado.vac = true; programar(); }, err("las vacantes"));
+    db.collection("empresas").limit(1000).onSnapshot(s => { S.emp = new Map(s.docs.map(d => [d.id, d.data()])); S.cargado.emp = true; programar(); }, err("las empresas"));
+    db.collection("borradores").limit(500).onSnapshot(s => { S.bor = new Map(s.docs.map(d => [d.id, d.data()])); S.cargado.bor = true; programar(); }, err("los borradores"));
+    db.doc("config/ajustes").onSnapshot(d => { S.ajustes = d.exists ? d.data() : null; programar(); }, err("los ajustes"));
+    db.collection("corridas").orderBy("fecha", "desc").limit(1).onSnapshot(s => { S.corrida = s.docs[0] ? s.docs[0].data() : null; programar(); }, err("la última corrida"));
+    S.downloads = { save: async ({ filename, data }) => {
+      const a = el("a", { href: URL.createObjectURL(new Blob([data], { type: "text/csv;charset=utf-8" })), download: filename });
+      a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    } };
+  }
+  let raf = 0;
+  function programar() { cancelAnimationFrame(raf); raf = requestAnimationFrame(render); }
+
+  // ---------- Render general ----------
+  function render() {
+    for (const [id] of [["hoy"], ["pipeline"], ["empresas"], ["metricas"], ["ajustes"]]) {
+      document.getElementById("v-" + id).hidden = S.view !== id;
+      document.getElementById("tab-" + id).setAttribute("aria-selected", String(S.view === id));
+    }
+    const listo = S.cargado.vac && S.cargado.emp && S.cargado.bor;
+    const pend = contarHoy();
+    const th = document.getElementById("tab-hoy");
+    th.replaceChildren("Hoy", pend ? el("span", { class: "count" }, pend) : "");
+    document.getElementById("folio-meta").textContent = "CRM de postulaciones · " + fFecha(hoy());
+    if (!listo) return;
+    if (S.ajustes && !S.ajustes.ciudadBase && S.view !== "ajustes") bannerMsg(el("span", null, "Falta tu ciudad base: sin ella todo lo presencial se calcula como mudanza. ", el("button", { class: "btn", onclick: () => ir("ajustes") }, "Completar en Ajustes")));
+    else if (S.db) bannerMsg("");
+    const vista = { hoy: vHoy, pipeline: vPipeline, empresas: vEmpresas, metricas: vMetricas, ajustes: vAjustes }[S.view];
+    const cont = document.getElementById("v-" + S.view);
+    const activo = document.activeElement;
+    const editando = activo && cont.contains(activo) && /^(INPUT|TEXTAREA|SELECT)$/.test(activo.tagName);
+    if (editando) {
+      // No pisar lo que se está escribiendo: solo se repinta la parte sin campos.
+      if (S.view === "pipeline") pintarTablero();
+      else if (S.view === "empresas" && !document.getElementById("emp-tabla").contains(activo)) pintarEmpresas();
+    } else cont.replaceChildren(...[].concat(vista()));
+    renderPanel();
+  }
+  function ir(v) { S.view = v; if (v !== "ajustes") S.ajDraft = null; window.scrollTo(0, 0); render(); }
+  document.getElementById("tabs").addEventListener("click", e => { const b = e.target.closest("button[data-view]"); if (b) ir(b.dataset.view); });
+
+  function contarHoy() {
+    let n = 0; const h = hoy();
+    for (const v of S.vac.values()) {
+      if (!abierta(v)) continue;
+      if (v.etapa === "por_aprobar") n++;
+      else if (v.proximaAccion && v.proximaAccion.fecha <= h && !sinNovedad(v)) n++;
+    }
+    for (const b of S.bor.values()) if (b.estado === "pendiente") n++;
+    return n;
+  }
+
+  // ---------- Vista: Hoy ----------
+  function vHoy() {
+    const h = hoy(); const vs = [...S.vac.entries()];
+    const abiertas = vs.filter(([, v]) => abierta(v));
+    const postuladas = vs.filter(([, v]) => v.fechaPostulacion && v.resultado !== "descartada");
+    const avanzaron = postuladas.filter(([, v]) => ORDEN.indexOf(v.etapaMax || v.etapa) >= ORDEN.indexOf("hv_vista"));
+    const vivas = abiertas.filter(([, v]) => ["hv_vista", "en_proceso", "oferta"].includes(v.etapa));
+    const pendientesBor = [...S.bor.entries()].filter(([, b]) => b.estado === "pendiente" || b.estado === "incierto");
+    const porAprobar = abiertas.filter(([, v]) => v.etapa === "por_aprobar").sort((a, b) => (b[1].puntaje || 0) - (a[1].puntaje || 0));
+    const aprobadas = abiertas.filter(([, v]) => v.etapa === "aprobada");
+    const acciones = abiertas.filter(([, v]) => v.proximaAccion && v.proximaAccion.fecha <= h && !sinNovedad(v))
+      .sort((a, b) => a[1].proximaAccion.fecha.localeCompare(b[1].proximaAccion.fecha));
+    const vencidasSN = abiertas.filter(([, v]) => sinNovedad(v) && v.proximaAccion.fecha <= h);
+    const conAlerta = abiertas.filter(([, v]) => (v.alertas || []).length);
+    const semana = abiertas.filter(([, v]) => v.proximaAccion && v.proximaAccion.fecha > h && v.proximaAccion.fecha <= masDias(h, 7));
+
+    const kpis = el("div", { class: "kpis" },
+      kpi(abiertas.length, "Abiertas"),
+      kpi(vivas.length, "Con respuesta de la empresa"),
+      kpi(postuladas.length ? Math.round(100 * avanzaron.length / postuladas.length) + "%" : "—", "Tasa de avance (" + avanzaron.length + "/" + postuladas.length + ")"),
+      kpi(porAprobar.length + pendientesBor.length + acciones.length, "Pendientes para hoy"));
+
+    const corr = S.corrida ? el("div", { class: "list" }, el("div", { class: "row" },
+      el("div", null, el("div", { class: "t" }, "Última corrida · " + fFecha(S.corrida.fecha)), el("div", { class: "s" }, S.corrida.resumen),
+        S.corrida.detalle && S.corrida.detalle.length ? el("details", { class: "s" }, el("summary", null, "Ver detalle"), el("ul", null, S.corrida.detalle.map(d => el("li", null, d)))) : ""))) : "";
+
+    const izq = el("div", { class: "block" },
+      bloque("Para aprobar", "Puntaje ≥ " + ajustes().umbralAprobar + ", con la carta lista",
+        porAprobar.length ? porAprobar.map(([id, v]) => filaAprobar(id, v)) : vacio("No hay vacantes esperando aprobación. La próxima corrida trae aquí las que superen el umbral, con la carta preparada.")),
+      bloque("Correos listos para enviar", "Se envían desde tu Gmail cuando tú lo confirmas",
+        pendientesBor.length ? pendientesBor.sort((a, b) => (a[1].nota || "").includes("no enviar") - (b[1].nota || "").includes("no enviar")).map(([id, b]) => filaBorrador(id, b)) : vacio("No hay borradores pendientes.")),
+      bloque("Acciones vencidas y de hoy", null,
+        acciones.length ? acciones.map(([id, v]) => filaAccion(id, v)) : vacio("Nada vencido. Buen trabajo.")),
+      vencidasSN.length ? bloqueSinNovedad(vencidasSN) : ""
+    );
+    const der = el("div", { class: "block" },
+      corr,
+      bloque("Aprobadas para postular en portal", "Claude las postula en la próxima corrida, después de confirmarte en el chat",
+        aprobadas.length ? aprobadas.map(([id, v]) => filaSimple(id, v, v.portal + " · puntaje " + (v.puntaje ?? "—"))) : vacio("Ninguna por ahora.")),
+      bloque("Alertas", null, conAlerta.length ? conAlerta.map(([id, v]) => filaSimple(id, v, null, alertaChips(v))) : vacio("Sin alertas.")),
+      bloque("Próximos 7 días", null, semana.length ? semana.sort((a, b) => a[1].proximaAccion.fecha.localeCompare(b[1].proximaAccion.fecha)).map(([id, v]) => filaSimple(id, v, fFecha(v.proximaAccion.fecha) + " · " + v.proximaAccion.texto)) : vacio("Nada programado."))
+    );
+    return [kpis, el("div", { class: "cols" }, izq, der)];
+  }
+  function kpi(v, l) { return el("div", { class: "kpi" }, el("div", { class: "v" }, v), el("div", { class: "l" }, l)); }
+  function vacio(t) { return el("div", { class: "empty" }, t); }
+  function bloque(titulo, hint, filas) {
+    return el("div", { class: "block" }, el("div", { class: "block-head" }, el("h2", null, titulo), hint ? el("span", { class: "hint" }, hint) : ""), el("div", { class: "list" }, filas));
+  }
+  function titulo(v) { return (v.empresa || "Empresa no revelada") + " · " + v.cargo; }
+  function filaAprobar(id, v) {
+    const r = calc(v); const p = r.presupuesto;
+    return el("div", { class: "row" },
+      el("div", null,
+        el("div", { class: "t" }, el("span", { class: scoreClass(r.total) }, r.total), " ", titulo(v)),
+        el("div", { class: "s" }, v.portal + " · " + (MODALIDADES.find(m => m[0] === v.modalidad) || [0, "—"])[1] + (v.ciudad ? " · " + v.ciudad : "") + " · salario " + cop(p.salarioRef)),
+        el("div", { class: "chips" }, alertaChips(v))),
+      el("div", { class: "acts" },
+        el("button", { class: "btn", onclick: () => abrir("vacante", id) }, "Revisar"),
+        el("button", { class: "btn ok", onclick: () => aprobar(id) }, "Aprobar"),
+        el("button", { class: "btn warn", onclick: () => cambiarEtapa(id, "cerrada", "descartada").then(() => toast("Descartada.")) }, "Descartar")));
+  }
+  function filaBorrador(id, b) {
+    const v = S.vac.get(b.vacanteId) || {};
+    return el("div", { class: "row clickable", tabindex: "0", onclick: (e) => { if (!e.target.closest("button")) abrir("borrador", id); } },
+      el("div", null,
+        el("div", { class: "t" }, b.asunto),
+        el("div", { class: "s" }, (v.empresa || "—") + " · para " + (b.para || []).join(", ")),
+        el("div", { class: "chips" },
+          el("span", { class: "chip plain" }, b.tipo === "postulacion" ? "Postulación" : "Seguimiento"),
+          b.estado === "incierto" ? el("span", { class: "chip bad" }, "Envío sin confirmar") : "",
+          noRecomendado(b) ? el("span", { class: "chip due" }, "No recomendado") : "",
+          b.adjuntarHV ? el("span", { class: "chip plain" }, "Con HV") : "")),
+      el("div", { class: "acts" }, el("button", { class: noRecomendado(b) ? "btn" : "btn primary", onclick: () => abrir("borrador", id) }, "Revisar y enviar")));
+  }
+  function filaAccion(id, v) {
+    const atraso = dias(v.proximaAccion.fecha);
+    return el("div", { class: "row" },
+      el("div", null,
+        el("div", { class: "t" }, v.proximaAccion.texto),
+        el("div", { class: "s" }, titulo(v)),
+        el("div", { class: "chips" }, el("span", { class: atraso > 0 ? "chip due" : "chip" }, atraso > 0 ? "Vencida hace " + atraso + " d" : "Hoy"), alertaChips(v))),
+      el("div", { class: "acts" },
+        el("button", { class: "btn", onclick: () => abrir("vacante", id) }, "Abrir"),
+        el("button", { class: "btn", onclick: () => posponer(id, 3) }, "+3 días"),
+        el("button", { class: "btn ok", onclick: () => accionHecha(id) }, "Hecho")));
+  }
+  function filaSimple(id, v, sub, extra) {
+    return el("div", { class: "row clickable", tabindex: "0", onclick: () => abrir("vacante", id) },
+      el("div", null, el("div", { class: "t" }, titulo(v)), sub ? el("div", { class: "s" }, sub) : "", extra ? el("div", { class: "chips" }, extra) : ""),
+      el("div", { class: "acts" }, el("span", { class: scoreClass(v.puntaje || 0) }, v.puntaje ?? "—")));
+  }
+  function bloqueSinNovedad(lista) {
+    const n = lista.length;
+    const abiertoConfirm = S.confirm && S.confirm.tipo === "cerrarSN";
+    return el("div", { class: "block" },
+      el("div", { class: "block-head" }, el("h2", null, n + " postulaciones sin novedad"), el("span", { class: "hint" }, "Más de " + ajustes().diasCierreSinNovedad + " días sin movimiento y sin contacto directo")),
+      el("div", { class: "list" },
+        el("div", { class: "row" },
+          el("div", null, el("div", { class: "s" }, "Cerrarlas como “sin respuesta” limpia el pipeline y hace que las métricas reflejen lo que está vivo. Si una empresa responde después, la reabres desde su ficha.")),
+          el("div", { class: "acts" }, el("button", { class: "btn", onclick: () => { S.confirm = { tipo: "cerrarSN" }; render(); } }, "Cerrar todas"))),
+        abiertoConfirm ? el("div", { class: "row" }, el("div", { class: "confirm" },
+          el("div", null, "Vas a cerrar " + n + " vacantes como “sin respuesta”. Cada una queda con su historial."),
+          el("div", { class: "acts" },
+            el("button", { class: "btn ok", disabled: S.ocupado, onclick: () => cerrarSinNovedad(lista) }, S.ocupado ? "Cerrando…" : "Sí, cerrar " + n),
+            el("button", { class: "btn", onclick: () => { S.confirm = null; render(); } }, "Cancelar")))) : "",
+        el("details", { class: "row" }, el("summary", { class: "s" }, "Ver la lista"),
+          el("div", null, lista.map(([id, v]) => el("div", { class: "s" }, el("a", { href: "#", onclick: (e) => { e.preventDefault(); abrir("vacante", id); } }, titulo(v)), " · postulada " + fFecha(v.fechaPostulacion)))))));
+  }
+  async function cerrarSinNovedad(lista) {
+    S.ocupado = true; render(); let ok = 0;
+    for (const [id] of lista) {
+      try { await actualizarVacante(id, { etapa: "cerrada", resultado: "sin_respuesta", proximaAccion: null }, { tipo: "cambio_etapa", texto: "Cerrada como sin respuesta: sin novedad y sin contacto directo" }); ok++; } catch (e) { break; }
+    }
+    S.ocupado = false; S.confirm = null; toast(ok + " vacantes cerradas como sin respuesta."); render();
+  }
+  async function aprobar(id) {
+    const v = S.vac.get(id);
+    await actualizarVacante(id, { etapa: "aprobada", proximaAccion: { fecha: hoy(), texto: v.canal === "correo" ? "Enviar la postulación (borrador listo)" : "Postular en " + v.portal + " (lo hace Claude en la próxima corrida, tras confirmar en el chat)" } },
+      { tipo: "cambio_etapa", texto: "Por aprobar → Aprobada · desde el CRM" });
+    toast(v.canal === "correo" ? "Aprobada. Revisa y envía el correo desde “Correos listos”." : "Aprobada. Claude la postula en la próxima corrida.");
+  }
+  async function posponer(id, n) {
+    const v = S.vac.get(id);
+    await actualizarVacante(id, { proximaAccion: { fecha: masDias(hoy(), n), texto: v.proximaAccion.texto } });
+    toast("Pospuesta " + n + " días.");
+  }
+  async function accionHecha(id) {
+    const v = S.vac.get(id);
+    await actualizarVacante(id, { proximaAccion: null }, { tipo: "accion", texto: "Hecho: " + v.proximaAccion.texto });
+    toast("Marcada como hecha. Define la siguiente acción en la ficha si hace falta.");
+  }
+
+  // ---------- Vista: Pipeline ----------
+  function vPipeline() {
+    const f = S.filtros;
+    const portales = [...new Set([...S.vac.values()].map(v => v.portal))].sort();
+    const barra = el("div", { class: "filters" },
+      el("input", { type: "search", id: "f-q", "aria-label": "Buscar", placeholder: "Buscar empresa, cargo o ciudad", value: f.q, oninput: (e) => { f.q = e.target.value; pintarTablero(); } }),
+      sel("f-perfil", [["", "Todos los perfiles"]].concat(PERFILES.map(p => [p, p])), f.perfil, (x) => { f.perfil = x; pintarTablero(); }, "Filtrar por perfil"),
+      sel("f-portal", [["", "Todos los portales"]].concat(portales.map(p => [p, p])), f.portal, (x) => { f.portal = x; pintarTablero(); }, "Filtrar por portal"),
+      el("label", { class: "chk small" }, el("input", { type: "checkbox", id: "f-cerradas", checked: f.cerradas, onchange: (e) => { f.cerradas = e.target.checked; pintarTablero(); } }), "Mostrar cerradas"),
+      el("button", { class: "btn", onclick: exportarCSV, disabled: !S.downloads }, "Exportar CSV"));
+    return [barra, el("div", { class: "board", id: "board" }, tablero())];
+  }
+  function pintarTablero() { const b = document.getElementById("board"); if (b) b.replaceChildren(tablero()); }
+  function filtrar() {
+    const f = S.filtros; const q = Motor.sinTildes(f.q);
+    return [...S.vac.entries()].filter(([, v]) =>
+      (!f.perfil || v.perfil === f.perfil) && (!f.portal || v.portal === f.portal) &&
+      (!q || Motor.sinTildes([v.empresa, v.cargo, v.ciudad, v.ubicacion].join(" ")).includes(q)));
+  }
+  function tablero() {
+    const lista = filtrar();
+    const lanes = ETAPAS.filter(([id]) => id !== "cerrada" || S.filtros.cerradas);
+    return el("div", { class: "board-in" }, lanes.map(([id, nombre]) => {
+      const items = lista.filter(([, v]) => v.etapa === id).sort((a, b) => (b[1].puntaje || 0) - (a[1].puntaje || 0));
+      return el("div", { class: "lane" }, el("h3", null, el("span", null, nombre), el("span", { class: "mono" }, items.length)),
+        items.length ? items.map(([vid, v]) => tarjeta(vid, v)) : el("div", { class: "small muted" }, "Sin vacantes"));
+    }));
+  }
+  function tarjeta(id, v) {
+    const d = dias(v.ultimaActividad);
+    return el("button", { class: "card " + nivelAlerta(v), onclick: () => abrir("vacante", id) },
+      el("div", { class: "e" }, v.empresa || "Empresa no revelada"),
+      el("div", { class: "c" }, v.cargo),
+      el("div", { class: "f" }, el("span", { class: scoreClass(v.puntaje || 0) }, v.puntaje ?? "—"), el("span", null, v.portal),
+        d != null ? el("span", null, "· " + d + " d") : "", v.etapa === "cerrada" && v.resultado ? el("span", null, "· " + RESULTADOS[v.resultado]) : "",
+        (v.alertas || []).length ? el("span", { class: "chip " + ((v.alertas || []).some(x => (ALERTAS[x] || [])[1] === "bad") ? "bad" : "due") }, (v.alertas || []).length === 1 ? (ALERTAS[v.alertas[0]] || [v.alertas[0]])[0] : v.alertas.length + " alertas") : ""));
+  }
+  // etiqueta: nombre para el lector de pantalla cuando la lista no va dentro de un <label>.
+  function sel(id, opciones, valor, onchange, etiqueta) {
+    return el("select", { id: id, "aria-label": etiqueta || null, onchange: (e) => onchange(e.target.value) }, opciones.map(([v, t]) => el("option", { value: v, selected: v === valor }, t)));
+  }
+
+  // ---------- Vista: Empresas ----------
+  let empQ = ""; let empAbierta = null;
+  function vEmpresas() {
+    return [el("div", { class: "filters" },
+      el("input", { type: "search", id: "emp-q", "aria-label": "Buscar empresa", placeholder: "Buscar empresa", value: empQ, oninput: (e) => { empQ = e.target.value; pintarEmpresas(); } }),
+      el("span", { class: "small muted", id: "emp-resumen" })),
+      el("div", { id: "emp-tabla" }, tablaEmpresas())];
+  }
+  function pintarEmpresas() { const t = document.getElementById("emp-tabla"); if (t) t.replaceChildren(tablaEmpresas()); }
+  function tablaEmpresas() {
+    const filas = [...S.emp.entries()].map(([id, e]) => {
+      const vs = [...S.vac.entries()].filter(([, v]) => v.empresaId === id);
+      const ult = vs.map(([, v]) => v.ultimaActividad || "").sort().pop();
+      return { id, e, vs, abiertas: vs.filter(([, v]) => abierta(v)).length, ult };
+    }).filter(r => !empQ || Motor.sinTildes(r.e.nombre).includes(Motor.sinTildes(empQ)))
+      .sort((a, b) => b.abiertas - a.abiertas || (b.ult || "").localeCompare(a.ult || ""));
+    const conContacto = filas.filter(r => (r.e.contactos || []).length).length;
+    requestAnimationFrame(() => { const r = document.getElementById("emp-resumen"); if (r) r.textContent = filas.length + " empresas · " + conContacto + " con contacto directo"; });
+    return el("div", { class: "tbl-wrap" }, el("table", null,
+      el("thead", null, el("tr", null, el("th", null, "Empresa"), el("th", null, "Contacto"), el("th", { class: "n" }, "Abiertas"), el("th", { class: "n" }, "Total"), el("th", null, "Último movimiento"))),
+      el("tbody", null, filas.map(r => [
+        el("tr", { class: "clickable", tabindex: "0", onclick: () => { empAbierta = empAbierta === r.id ? null : r.id; pintarEmpresas(); } },
+          el("td", null, el("strong", null, r.e.nombre)),
+          el("td", null, (r.e.contactos || []).length ? (r.e.contactos || []).map(c => el("div", { class: "mono small" }, c.email || c.telefono)) : el("span", { class: "muted small" }, "Sin contacto")),
+          el("td", { class: "n" }, r.abiertas), el("td", { class: "n" }, r.vs.length), el("td", { class: "mono small" }, fFecha(r.ult))),
+        empAbierta === r.id ? el("tr", null, el("td", { colspan: "5" }, fichaEmpresa(r.id, r.e, r.vs))) : ""
+      ]))));
+  }
+  function fichaEmpresa(id, e, vs) {
+    const form = { nombre: "", email: "", rol: "" };
+    return el("div", { class: "block" },
+      el("div", null, vs.map(([vid, v]) => el("div", { class: "small" }, el("a", { href: "#", onclick: (ev) => { ev.preventDefault(); abrir("vacante", vid); } }, v.cargo), " · " + ETAPA_NOMBRE[v.etapa] + (v.resultado ? " (" + RESULTADOS[v.resultado] + ")" : "")))),
+      (e.contactos || []).length ? el("div", null, (e.contactos || []).map(c => el("div", { class: "small" }, [c.nombre, c.rol].filter(Boolean).join(" · ") || "Contacto", " — ", el("span", { class: "mono" }, c.email || c.telefono || ""), " ", c.email ? copiar(c.email) : "", c.fuente ? el("span", { class: "muted" }, " · " + c.fuente) : ""))) : "",
+      el("div", { class: "fgrid" },
+        el("label", { class: "f" }, "Nombre", el("input", { id: "nc-nombre-" + id, oninput: (ev) => form.nombre = ev.target.value })),
+        el("label", { class: "f" }, "Correo o teléfono", el("input", { id: "nc-email-" + id, oninput: (ev) => form.email = ev.target.value })),
+        el("label", { class: "f" }, "Rol", el("input", { id: "nc-rol-" + id, oninput: (ev) => form.rol = ev.target.value }))),
+      el("div", null, el("button", { class: "btn", onclick: async () => {
+        if (!form.email.trim()) { toast("Escribe al menos un correo o teléfono.", true); return; }
+        const esCorreo = form.email.includes("@");
+        const c = { nombre: form.nombre.trim() || null, email: esCorreo ? form.email.trim() : null, telefono: esCorreo ? null : form.email.trim(), rol: form.rol.trim() || null, fuente: "Agregado en el CRM " + hoy() };
+        await escribir("empresas/" + id, { contactos: (e.contactos || []).concat([c]), _rev: e._rev || 0 }); toast("Contacto agregado.");
+      } }, "Agregar contacto")));
+  }
+  function copiar(txt) {
+    return el("button", { class: "btn", style: "padding:1px 7px;font-size:.74rem", onclick: (e) => {
+      e.stopPropagation();
+      const done = () => toast("Copiado: " + txt);
+      try { navigator.clipboard.writeText(txt).then(done, () => toast("Selecciona el texto y cópialo a mano: " + txt)); } catch (_) { toast("Selecciona el texto y cópialo a mano: " + txt); }
+    } }, "Copiar");
+  }
+
+  // ---------- Vista: Métricas ----------
+  function vMetricas() {
+    const vs = [...S.vac.values()];
+    const post = vs.filter(v => v.fechaPostulacion && v.resultado !== "descartada");
+    const adv = (v) => ORDEN.indexOf(v.etapaMax || v.etapa) >= ORDEN.indexOf("hv_vista");
+    const ent = (v) => ORDEN.indexOf(v.etapaMax || v.etapa) >= ORDEN.indexOf("en_proceso");
+    const grupos = (clave) => {
+      const m = new Map();
+      for (const v of post) { const k = clave(v) || "—"; const g = m.get(k) || { n: 0, a: 0 }; g.n++; if (adv(v)) g.a++; m.set(k, g); }
+      return [...m.entries()].sort((a, b) => b[1].n - a[1].n);
+    };
+    const maxN = (gs) => Math.max(1, ...gs.map(g => g[1].n));
+    const barras = (titulo, gs) => el("div", { class: "block" }, el("h2", null, titulo), el("div", { class: "bars" },
+      el("div", { class: "legend" }, el("span", null, el("i", { style: "background:color-mix(in srgb, var(--accent) 28%, transparent)" }), "Postulaciones"), el("span", null, el("i", { style: "background:var(--accent)" }), "Avanzaron (HV vista o más)")),
+      gs.map(([k, g]) => el("div", { class: "bar-row" }, el("span", null, k),
+        el("div", { class: "bar-track" }, el("div", { class: "bar-fill", style: "width:" + (100 * g.n / maxN(gs)) + "%" }), el("div", { class: "bar-fill adv", style: "width:" + (100 * g.a / maxN(gs)) + "%" })),
+        el("span", { class: "v" }, g.a + "/" + g.n + " · " + Math.round(100 * g.a / g.n) + "%")))));
+    const embudo = [["Postuladas", post.length], ["HV vista o más", post.filter(adv).length], ["Entrevista o proceso", post.filter(ent).length], ["Oferta", post.filter(v => ORDEN.indexOf(v.etapaMax || v.etapa) >= ORDEN.indexOf("oferta")).length]];
+    const semanas = [];
+    for (let i = 9; i >= 0; i--) {
+      const fin = masDias(hoy(), -7 * i), ini = masDias(fin, -6);
+      semanas.push([ini, post.filter(v => v.fechaPostulacion >= ini && v.fechaPostulacion <= fin).length]);
+    }
+    const maxS = Math.max(1, ...semanas.map(s => s[1]));
+    const resultados = new Map(); for (const v of vs) if (v.etapa === "cerrada") resultados.set(v.resultado, (resultados.get(v.resultado) || 0) + 1);
+    return [
+      el("div", { class: "block" }, el("h2", null, "Embudo"), el("div", { class: "bars" }, embudo.map(([k, n]) => el("div", { class: "bar-row" }, el("span", null, k),
+        el("div", { class: "bar-track" }, el("div", { class: "bar-fill adv", style: "width:" + (100 * n / Math.max(1, post.length)) + "%" })), el("span", { class: "v" }, n + (post.length ? " · " + Math.round(100 * n / post.length) + "%" : "")))))),
+      el("div", { class: "cols" }, barras("Por portal", grupos(v => v.portal)), barras("Por perfil", grupos(v => v.perfil))),
+      el("div", { class: "cols" },
+        el("div", { class: "block" }, el("h2", null, "Postulaciones por semana"), el("div", { class: "bars" }, semanas.map(([ini, n]) => el("div", { class: "bar-row" }, el("span", { class: "mono small" }, "Sem. " + fFecha(ini)),
+          el("div", { class: "bar-track" }, el("div", { class: "bar-fill adv", style: "width:" + (100 * n / maxS) + "%" })), el("span", { class: "v" }, n))))),
+        el("div", { class: "block" }, el("h2", null, "Cómo se cerraron"), el("div", { class: "tbl-wrap" }, el("table", null,
+          el("thead", null, el("tr", null, el("th", null, "Resultado"), el("th", { class: "n" }, "Vacantes"))),
+          el("tbody", null, [...resultados.entries()].sort((a, b) => b[1] - a[1]).map(([r, n]) => el("tr", null, el("td", null, RESULTADOS[r] || r), el("td", { class: "n" }, n))))))))
+    ];
+  }
+
+  // ---------- Vista: Ajustes ----------
+  function vAjustes() {
+    const a = S.ajDraft || (S.ajDraft = JSON.parse(JSON.stringify(ajustes())));
+    const casos = a.casos || (a.casos = []);
+    const num = (id, etiqueta, valor, set, paso) => el("label", { class: "f" }, etiqueta, el("input", { id: id, type: "number", step: paso || "1", value: valor, oninput: (e) => set(Number(e.target.value)) }));
+    const guardar = async () => {
+      if (!S.db) return;
+      const limpio = Object.fromEntries(Object.keys(Motor.AJUSTES_BASE).map(k => [k, a[k]]));  // borra ajustes viejos que ya no se usan
+      await escribir("config/ajustes", limpio, true); S.ajDraft = null; toast("Ajustes guardados. Usa “Recalcular puntajes” para aplicarlos a todas las vacantes.");
+    };
+    return [
+      el("div", { class: "block" }, el("h2", null, "Tu ciudad"), el("p", { class: "muted small", style: "margin:0" },
+        "Una vacante presencial o híbrida en tu ciudad cuenta como «En mi ciudad»; en otra ciudad (o sin ciudad publicada) cuenta como «Con mudanza»."),
+        el("div", { class: "form" }, el("div", { class: "fgrid" },
+          el("label", { class: "f" }, "Tu ciudad base", el("input", { id: "aj-ciudad", value: a.ciudadBase || "", placeholder: "Ej.: Medellín", oninput: (e) => a.ciudadBase = e.target.value }))))),
+      el("div", { class: "block" }, el("h2", null, "Casos de búsqueda"), el("p", { class: "muted small", style: "margin:0" },
+        "Las palabras clave son las que Claude busca en los portales. Cada vacante usa el primer caso (de arriba abajo) con una de sus palabras en el cargo y que acepte su tipo de contrato y su modalidad; un caso sin palabras sirve para cualquier cargo. Si el aviso no dice el contrato, se asume tiempo completo. Si ningún caso la acepta, queda bloqueada. Por debajo del salario mínimo pierde el puntaje económico."),
+        el("div", { class: "form" }, casos.map((c, i) => el("div", { class: "caso" },
+            el("span", { class: "mono small" }, "Caso " + (i + 1)),
+            el("label", { class: "f palabras" }, "Palabras clave (separadas por coma)", el("textarea", { id: "aj-c" + i + "-palabras", placeholder: "Vacío: cualquier cargo", oninput: (e) => c.palabras = e.target.value }, c.palabras || "")),
+            el("label", { class: "f" }, "Tipo de contrato", sel("aj-c" + i + "-contrato", CONTRATOS.concat([["cualquiera", "Cualquiera"]]), c.contrato, x => c.contrato = x)),
+            el("label", { class: "f" }, "Modalidad", sel("aj-c" + i + "-modalidad", [["remoto", "Remoto"], ["ciudad", "En mi ciudad"], ["remoto_ciudad", "Remoto o en mi ciudad"], ["mudanza", "Con mudanza"], ["cualquiera", "Cualquiera"]], c.modalidad, x => c.modalidad = x)),
+            num("aj-c" + i + "-salario", "Salario mínimo", c.salarioMinimo, x => c.salarioMinimo = x, "50000"),
+            el("button", { class: "btn", onclick: () => { casos.splice(i, 1); render(); } }, "Quitar"))),
+          el("div", null, el("button", { class: "btn", onclick: () => { casos.push({ palabras: "", contrato: "tiempo_completo", modalidad: "remoto", salarioMinimo: 0 }); render(); } }, "+ Agregar caso")))),
+      el("div", { class: "block" }, el("h2", null, "Reglas de la corrida"),
+        el("div", { class: "form" }, el("div", { class: "fgrid" },
+          num("aj-umbral", "Puntaje mínimo para aprobar", a.umbralAprobar, v => a.umbralAprobar = v),
+          num("aj-limite", "Postulaciones máximas por corrida", a.limitePorCorrida, v => a.limitePorCorrida = v),
+          num("aj-dias1", "Días hasta el primer seguimiento", a.diasPrimerSeguimiento, v => a.diasPrimerSeguimiento = v),
+          num("aj-dias2", "Días entre seguimientos", a.diasEntreSeguimientos, v => a.diasEntreSeguimientos = v),
+          num("aj-max", "Seguimientos máximos por vacante", a.maxSeguimientos, v => a.maxSeguimientos = v),
+          num("aj-cierre", "Días sin novedad para cerrar", a.diasCierreSinNovedad, v => a.diasCierreSinNovedad = v)))),
+      el("div", { class: "filters" },
+        el("button", { class: "btn primary", onclick: guardar, disabled: !S.db }, "Guardar ajustes"),
+        el("button", { class: "btn", onclick: recalcular, disabled: !S.db || S.ocupado }, S.ocupado ? "Recalculando…" : "Recalcular puntajes"),
+        el("button", { class: "btn", onclick: exportarCSV, disabled: !S.downloads }, "Exportar CSV"))
+    ];
+  }
+  async function recalcular() {
+    S.ocupado = true; programar(); let n = 0;
+    for (const [id, v] of S.vac) {
+      if (!abierta(v)) continue;
+      const r = calc(v);
+      if (r.total !== v.puntaje || r.presupuesto.neto !== v.neto) {
+        try { await escribir("vacantes/" + id, { puntaje: r.total, neto: r.presupuesto.neto }); n++; } catch (e) { break; }
+      }
+    }
+    S.ocupado = false; toast(n ? n + " puntajes actualizados." : "Todos los puntajes ya estaban al día."); programar();
+  }
+  async function exportarCSV() {
+    if (!S.downloads) return;
+    const cols = ["empresa", "cargo", "perfil", "nivel", "modalidad", "ciudad", "salarioTexto", "portal", "etapa", "resultado", "puntaje", "neto", "fechaPostulacion", "ultimaActividad", "link", "notas", "aviso"];
+    const q = (x) => { const s = x == null ? "" : String(x); return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const filas = [cols.join(",")].concat([...S.vac.values()].map(v => cols.map(c => q(c === "etapa" ? ETAPA_NOMBRE[v.etapa] : c === "resultado" ? RESULTADOS[v.resultado] || "" : v[c])).join(",")));
+    try { await S.downloads.save({ filename: "postulaciones-" + hoy() + ".csv", data: "﻿" + filas.join("\n") }); }
+    catch (e) { if (e && e.code !== "declined") toast("No se pudo exportar el archivo en esta vista.", true); }
+  }
+
+  // ---------- Panel lateral ----------
+  // El panel es modal: al abrir, el foco entra en él; Tab no sale de él; al cerrar, vuelve a lo que lo abrió.
+  function abrir(tipo, id) {
+    if (!S.panel) S.abridor = document.activeElement;
+    S.panel = { tipo, id }; S.confirm = null; panelFirma = ""; S.enfocar = true; renderPanel();
+  }
+  function cerrarPanel() {
+    S.panel = null; S.confirm = null; document.getElementById("overlay").replaceChildren();
+    const a = S.abridor; S.abridor = null; if (a && a.isConnected) a.focus();
+  }
+  // Filas clicables: Enter las abre con el teclado.
+  document.addEventListener("keydown", e => {
+    if (e.key === "Enter" && e.target.classList && e.target.classList.contains("clickable")) { e.target.click(); return; }
+    if (!S.panel) return;
+    if (e.key === "Escape") { cerrarPanel(); return; }
+    const dr = document.querySelector("#overlay .drawer");
+    if (e.key !== "Tab" || !dr) return;
+    const f = [...dr.querySelectorAll("button, a[href], input, select, textarea, summary")].filter(x => !x.disabled && x.offsetParent !== null);
+    if (!f.length) return;
+    const primero = f[0], ultimo = f[f.length - 1];
+    if (!dr.contains(document.activeElement)) { e.preventDefault(); primero.focus(); }
+    else if (e.shiftKey && document.activeElement === primero) { e.preventDefault(); ultimo.focus(); }
+    else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primero.focus(); }
+  });
+  let panelFirma = "";
+  function renderPanel() {
+    const ov = document.getElementById("overlay");
+    if (!S.panel) { ov.replaceChildren(); return; }
+    const dato = S.panel.tipo === "vacante" ? S.vac.get(S.panel.id) : S.bor.get(S.panel.id);
+    if (!dato) { cerrarPanel(); return; }
+    // Solo se repinta si cambió el documento, la confirmación o el estado de envío.
+    const firma = S.panel.tipo + S.panel.id + JSON.stringify(dato) + JSON.stringify(S.confirm) + S.ocupado;
+    const dr = ov.querySelector(".drawer");
+    if (dr && firma === panelFirma) return;
+    panelFirma = firma;
+    const scroll = dr ? dr.scrollTop : 0;
+    const enfocado = dr && dr.contains(document.activeElement) ? document.activeElement.id : null;
+    const cuerpo = S.panel.tipo === "vacante" ? panelVacante(S.panel.id, dato) : panelBorrador(S.panel.id, dato);
+    const nuevo = el("aside", { class: "drawer", role: "dialog", "aria-modal": "true", "aria-label": "Detalle" }, cuerpo);
+    ov.replaceChildren(el("div", { class: "scrim", onclick: cerrarPanel }), nuevo);
+    nuevo.scrollTop = scroll;
+    // Al abrir, el foco va al botón Cerrar; al repintar, se queda en el campo que tenía (si tiene id).
+    const destino = S.enfocar ? nuevo.querySelector('button[aria-label="Cerrar"]') || nuevo.querySelector("button") : enfocado && document.getElementById(enfocado);
+    S.enfocar = false;
+    if (destino) destino.focus({ preventScroll: true });
+  }
+  function cabecera(t, sub, extra) {
+    return el("div", { class: "dh" }, el("div", null, el("h2", null, t), sub ? el("div", { class: "muted" }, sub) : "", extra || ""),
+      el("button", { class: "btn", onclick: cerrarPanel, "aria-label": "Cerrar" }, "Cerrar"));
+  }
+
+  function panelVacante(id, v) {
+    const r = calc(v); const p = r.presupuesto;
+    const P = S.panel;
+    const edit = P.edit || (P.edit = { modalidad: v.modalidad, ciudad: v.ciudad || "", salarioMin: v.salarioMin, salarioMax: v.salarioMax, experienciaAnios: v.experienciaAnios, nivel: v.nivel || p.nivel, perfil: v.perfil, contrato: v.contrato || "", notas: v.notas || "" });
+    const acc = P.acc || (P.acc = { fecha: (v.proximaAccion && v.proximaAccion.fecha) || masDias(hoy(), 3), texto: (v.proximaAccion && v.proximaAccion.texto) || "" });
+    let nota = "";
+    const borr = [...S.bor.entries()].filter(([, b]) => b.vacanteId === id);
+    const empresa = v.empresaId ? S.emp.get(v.empresaId) : null;
+    const partes = [["Perfil", r.partes.perfil, 30], ["Experiencia", r.partes.experiencia, 20], ["Económico", r.partes.economico, 30], ["Modalidad", r.partes.modalidad, 10], ["Frescura", r.partes.frescura, 10]];
+    const numIn = (idc, etq, val, set) => el("label", { class: "f" }, etq, el("input", { id: idc, type: "number", value: val ?? "", oninput: (e) => set(e.target.value === "" ? null : Number(e.target.value)) }));
+    return [
+      cabecera(v.empresa || "Empresa no revelada", v.cargo,
+        el("div", { class: "chips" }, el("span", { class: "chip plain" }, v.portal), enlaceSeguro(v.link) ? el("a", { class: "chip plain", href: enlaceSeguro(v.link), target: "_blank", rel: "noopener" }, "Abrir aviso ↗") : "", alertaChips(v).map(c => { c.append(" "); c.append(el("button", { class: "btn", style: "padding:0 5px;font-size:.7rem;border:0;background:none", "aria-label": "Quitar alerta", onclick: () => quitarAlerta(id, v, c.dataset.a) }, "×")); return c; }))),
+      el("div", { class: "dsec" }, el("h3", null, "Etapa"),
+        el("div", { class: "filters" },
+          sel("p-etapa", ETAPAS, v.etapa, (x) => cambiarEtapa(id, x), "Etapa"),
+          v.etapa === "cerrada" ? sel("p-res", Object.entries(RESULTADOS), v.resultado || "", (x) => actualizarVacante(id, { resultado: x }, { tipo: "cambio_etapa", texto: "Resultado: " + RESULTADOS[x] }), "Resultado") : "",
+          v.etapa === "por_aprobar" ? el("button", { class: "btn ok", onclick: () => aprobar(id) }, "Aprobar") : ""),
+        v.estadoPortal ? el("div", { class: "small muted" }, "Estado original en el portal/Excel: " + v.estadoPortal) : ""),
+      el("div", { class: "dsec" }, el("h3", null, "Próxima acción"),
+        el("div", { class: "fgrid" },
+          el("label", { class: "f" }, "Fecha", el("input", { id: "p-acc-fecha", type: "date", value: acc.fecha, oninput: (e) => acc.fecha = e.target.value })),
+          el("label", { class: "f", style: "grid-column: span 2" }, "Qué hay que hacer", el("input", { id: "p-acc-texto", value: acc.texto, placeholder: "Ej.: Llamar a selección", oninput: (e) => acc.texto = e.target.value }))),
+        el("div", { class: "filters" },
+          el("button", { class: "btn", onclick: () => acc.texto.trim() ? actualizarVacante(id, { proximaAccion: { fecha: acc.fecha, texto: acc.texto.trim() } }).then(() => { P.acc = null; toast("Próxima acción guardada."); }) : toast("Escribe qué hay que hacer.", true) }, "Guardar acción"),
+          v.proximaAccion ? el("button", { class: "btn ok", onclick: () => accionHecha(id) }, "Marcar hecha") : "")),
+      el("div", { class: "dsec" }, el("h3", null, "Puntaje"),
+        el("div", { style: "display:flex;gap:18px;align-items:center;flex-wrap:wrap" },
+          el("div", { class: "bigscore", style: "color:" + (r.total >= ajustes().umbralAprobar ? "var(--ok)" : "var(--ink)") }, r.total),
+          el("div", { class: "breakdown", style: "flex:1;min-width:220px" }, partes.map(([k, n, m]) => el("div", { class: "bd" }, el("span", null, k),
+            el("div", { class: "bar-track" }, el("div", { class: "bar-fill adv", style: "width:" + (100 * n / m) + "%" })), el("span", { class: "mono small" }, n + "/" + m))))),
+        r.bloqueo ? el("div", { class: "chip bad" }, "Bloqueada: " + r.bloqueo) : ""),
+      el("div", { class: "dsec" }, el("h3", null, "Salario"),
+        el("dl", { class: "kv" },
+          el("dt", null, "Salario de referencia"), el("dd", { class: "num" }, cop(p.salarioRef), v.salarioTexto ? el("span", { class: "muted small" }, "  (" + v.salarioTexto + ")") : ""),
+          el("dt", null, "Situación"), el("dd", null, { remoto: "Remoto", ciudad: "En tu ciudad", mudanza: "Con mudanza" }[p.modo],
+            p.supuesto ? el("div", { class: "muted small" }, "La modalidad o la ciudad no están publicadas: se asumió mudanza.") : ""),
+          el("dt", null, "Caso que aplica"), el("dd", null, p.caso ? "Caso " + p.caso : "Ninguno"),
+          el("dt", null, "Mínimo del caso"), el("dd", { class: "num" }, cop(p.minimo)),
+          el("dt", null, "¿Cumple?"), el("dd", null, p.cumple == null ? el("span", { class: "muted" }, "Sin datos suficientes") : p.cumple ? el("span", { class: "chip ok" }, "Sí") : el("span", { class: "chip bad" }, "No")))),
+      el("div", { class: "dsec" }, el("h3", null, "Datos que alimentan el puntaje"),
+        el("div", { class: "fgrid" },
+          el("label", { class: "f" }, "Modalidad", sel("p-mod", MODALIDADES, edit.modalidad, x => edit.modalidad = x)),
+          el("label", { class: "f" }, "Ciudad", el("input", { id: "p-ciudad", value: edit.ciudad, oninput: (e) => edit.ciudad = e.target.value })),
+          el("label", { class: "f" }, "Nivel", sel("p-nivel", NIVELES.map(n => [n, n]), edit.nivel, x => edit.nivel = x)),
+          el("label", { class: "f" }, "Perfil", sel("p-perfil", PERFILES.map(x => [x, x]), edit.perfil, x => edit.perfil = x)),
+          el("label", { class: "f" }, "Tipo de contrato", sel("p-contrato", [["", "No lo dice (tiempo completo)"]].concat(CONTRATOS), edit.contrato, x => edit.contrato = x)),
+          numIn("p-smin", "Salario desde", edit.salarioMin, x => edit.salarioMin = x),
+          numIn("p-smax", "Salario hasta", edit.salarioMax, x => edit.salarioMax = x),
+          numIn("p-exp", "Años de experiencia pedidos", edit.experienciaAnios, x => edit.experienciaAnios = x)),
+        el("label", { class: "f" }, "Notas", el("textarea", { id: "p-notas", style: "min-height:90px", oninput: (e) => edit.notas = e.target.value }, edit.notas)),
+        el("div", null, el("button", { class: "btn primary", onclick: () => actualizarVacante(id, Object.assign({}, edit, { ciudad: edit.ciudad.trim() || null, contrato: edit.contrato || null })).then(() => { P.edit = null; toast("Datos guardados y puntaje recalculado."); }) }, "Guardar datos"))),
+      el("div", { class: "dsec" }, el("h3", null, "Aviso guardado"),
+        v.aviso ? el("details", null, el("summary", { class: "small" }, "Ver el texto del aviso (copia del " + fFecha(v.fechaRegistro) + ")"),
+          el("div", { class: "small", style: "white-space:pre-wrap;margin-top:6px" }, v.aviso))
+          : el("div", { class: "small muted" }, "No se guardó el texto del aviso.")),
+      empresa ? el("div", { class: "dsec" }, el("h3", null, "Contactos de " + empresa.nombre),
+        (empresa.contactos || []).length ? (empresa.contactos || []).map(c => el("div", { class: "small" }, [c.nombre, c.rol].filter(Boolean).join(" · ") || "Contacto", " — ", el("span", { class: "mono" }, c.email || c.telefono || ""), " ", c.email ? copiar(c.email) : "")) : el("div", { class: "small muted" }, "Sin contacto directo. Agrégalo en la pestaña Empresas cuando lo tengas.")) : "",
+      borr.length ? el("div", { class: "dsec" }, el("h3", null, "Correos"), borr.map(([bid, b]) => el("div", { class: "small" }, el("a", { href: "#", onclick: (e) => { e.preventDefault(); abrir("borrador", bid); } }, b.asunto), " · " + ({ pendiente: "Pendiente", enviado: "Enviado " + fFecha((b.enviadoEn || "").slice(0, 10)), descartado: "Descartado", incierto: "Envío sin confirmar", borrador_gmail: "En borradores de Gmail" }[b.estado] || b.estado)))) : "",
+      el("div", { class: "dsec" }, el("h3", null, "Historial"),
+        el("div", { class: "filters" }, el("input", { id: "p-nota", "aria-label": "Nota", placeholder: "Agregar una nota o registrar una llamada", style: "flex:1 1 240px;border:1px solid var(--rule);background:var(--paper);border-radius:6px;padding:6px 10px", oninput: (e) => nota = e.target.value }),
+          el("button", { class: "btn", onclick: () => nota.trim() && actualizarVacante(id, {}, { tipo: "nota", texto: nota.trim() }).then(() => toast("Nota agregada.")) }, "Agregar")),
+        el("div", { class: "timeline" }, (v.historial || []).slice().reverse().map(h => el("div", { class: "tl" }, el("div", { class: "d" }, fFecha(h.fecha)), el("div", null, el("div", { class: "k" }, TIPOS_HIST[h.tipo] || h.tipo), el("div", null, h.texto))))))
+    ];
+  }
+  async function quitarAlerta(id, v, a) {
+    if (!a) return;
+    await actualizarVacante(id, { alertas: (v.alertas || []).filter(x => x !== a) }, { tipo: "nota", texto: "Alerta retirada: " + ((ALERTAS[a] || [a])[0]) });
+    toast("Alerta retirada.");
+  }
+
+  function panelBorrador(id, b) {
+    const v = S.vac.get(b.vacanteId) || {};
+    const P = S.panel;
+    const ed = P.ed || (P.ed = { para: (b.para || []).join(", "), cc: (b.cc || []).join(", "), asunto: b.asunto || "", cuerpo: b.cuerpo || "", adjuntarHV: !!b.adjuntarHV });
+    const lista = (s) => s.split(/[,;\s]+/).map(x => x.trim()).filter(Boolean);
+    const valido = (xs) => xs.length && xs.every(x => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x));
+    const guardar = () => escribir("borradores/" + id, { para: lista(ed.para), cc: lista(ed.cc), asunto: ed.asunto, cuerpo: ed.cuerpo, adjuntarHV: ed.adjuntarHV });
+    const c = S.confirm && S.confirm.borrador === id ? S.confirm : null;
+    const enviado = b.estado === "enviado";
+    return [
+      cabecera(b.tipo === "postulacion" ? "Postulación por correo" : "Seguimiento por correo", titulo(v)),
+      b.nota ? el("div", { class: noRecomendado(b) ? "confirm bad" : "confirm" }, b.nota) : "",
+      b.estado === "incierto" ? el("div", { class: "confirm bad" }, "El último intento de envío no se pudo confirmar. Revisa la carpeta Enviados de Gmail antes de volver a enviar, para no mandarlo dos veces.") : "",
+      enviado ? el("div", { class: "confirm" }, "Enviado el " + fFecha((b.enviadoEn || "").slice(0, 10)) + ".") : "",
+      el("div", { class: "form" },
+        el("label", { class: "f" }, "Para", el("input", { id: "b-para", value: ed.para, disabled: enviado, oninput: (e) => ed.para = e.target.value })),
+        el("label", { class: "f" }, "Copia (CC)", el("input", { id: "b-cc", value: ed.cc, disabled: enviado, oninput: (e) => ed.cc = e.target.value })),
+        el("label", { class: "f" }, "Asunto", el("input", { id: "b-asunto", value: ed.asunto, disabled: enviado, oninput: (e) => ed.asunto = e.target.value })),
+        el("label", { class: "f" }, "Mensaje", el("textarea", { id: "b-cuerpo", disabled: enviado, oninput: (e) => ed.cuerpo = e.target.value }, ed.cuerpo)),
+        el("label", { class: "chk" }, el("input", { type: "checkbox", id: "b-hv", checked: ed.adjuntarHV, disabled: enviado, onchange: (e) => ed.adjuntarHV = e.target.checked }), "Adjuntar HV (2 páginas, PDF)"),
+        el("div", { class: "small muted" }, (ed.cuerpo.split(/\s+/).filter(Boolean).length) + " palabras · la regla de la casa es máximo 150")),
+      enviado ? "" : el("div", { class: "filters" },
+        el("button", { class: "btn", onclick: () => guardar().then(() => toast("Cambios guardados.")) }, "Guardar cambios"),
+        el("button", { class: "btn primary", disabled: S.ocupado, onclick: async () => {
+          if (!valido(lista(ed.para))) { toast("Revisa el destinatario: debe ser un correo válido.", true); return; }
+          await guardar(); S.confirm = { borrador: id }; renderPanel();
+        } }, "Ya lo envié"),
+        el("button", { class: "btn warn", onclick: () => escribir("borradores/" + id, { estado: "descartado" }).then(() => { toast("Borrador descartado."); cerrarPanel(); }) }, "Descartar")),
+      enviado ? "" : el("div", { class: "small muted" }, "Envíalo desde tu Gmail (Claude deja el borrador allá, o copia este texto) y luego marca “Ya lo envié”."),
+      c ? el("div", { class: "confirm" },
+        el("div", null, el("strong", null, "¿Ya lo enviaste desde tu Gmail?"), el("div", { class: "small" }, "Para: " + lista(ed.para).join(", ") + (lista(ed.cc).length ? " · CC: " + lista(ed.cc).join(", ") : "") + (ed.adjuntarHV ? " · con HV adjunta" : ""))),
+        el("div", { class: "filters" },
+          el("button", { class: "btn ok", disabled: S.ocupado, onclick: () => marcarEnviado(id, ed, lista) }, S.ocupado ? "Guardando…" : "Sí, ya salió"),
+          el("button", { class: "btn", disabled: S.ocupado, onclick: () => { S.confirm = null; renderPanel(); } }, "Cancelar"))) : ""
+    ];
+  }
+
+  // ---------- Correos ----------
+  // El usuario envía desde su Gmail; aquí solo se marca que salió y se mueve la vacante.
+  async function marcarEnviado(id, ed, lista) {
+    const b = S.bor.get(id);
+    S.ocupado = true; renderPanel();
+    try {
+      await escribir("borradores/" + id, { estado: "enviado", enviadoEn: new Date().toISOString() });
+      const v = S.vac.get(b.vacanteId);
+      if (v) {
+        const a = ajustes(); const seg = (v.seguimientos || 0) + (b.tipo === "seguimiento" ? 1 : 0);
+        const cambios = { seguimientos: seg };
+        if (b.tipo === "postulacion") { cambios.etapa = "postulada"; cambios.fechaPostulacion = hoy(); }
+        cambios.proximaAccion = seg >= a.maxSeguimientos
+          ? { fecha: masDias(hoy(), a.diasEntreSeguimientos), texto: "Tope de seguimientos: si no responden, cerrar como sin respuesta" }
+          : { fecha: masDias(hoy(), seg ? a.diasEntreSeguimientos : a.diasPrimerSeguimiento), texto: "Enviar seguimiento" };
+        await actualizarVacante(b.vacanteId, cambios, { tipo: b.tipo === "postulacion" ? "postulacion" : "correo_enviado", texto: (b.tipo === "postulacion" ? "Postulación" : "Seguimiento") + " enviado por el usuario a " + lista(ed.para).join(", ") + ": “" + ed.asunto + "”" });
+      }
+      S.confirm = null; toast("Marcado como enviado.");
+    } catch (_) { /* escribir ya mostró el aviso */ }
+    finally { S.ocupado = false; programar(); renderPanel(); }
+  }
+
+  iniciar();
+})();
+</script>

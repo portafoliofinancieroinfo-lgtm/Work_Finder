@@ -1,0 +1,17 @@
+# Tus datos nunca se suben
+perfil.json
+Base de datos/finder.db
+Base de datos/finder.db-*
+Base de datos/finder.db.nuevo
+Base de datos/finder (*.db
+Contexto postulante/*
+!Contexto postulante/LEEME.md
+*.local.json
+.claude/settings.local.json
+
+# Archivos de trabajo
+cambios.json
+nuevas.json
+registro.json
+__pycache__/
+*.pyc

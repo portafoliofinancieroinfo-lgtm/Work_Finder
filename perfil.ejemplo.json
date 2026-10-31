@@ -1,0 +1,41 @@
+{
+  "contacto": {
+    "nombre": "Camila Ejemplo",
+    "telefono": "+57 300 000 0000",
+    "correo": "camila.ejemplo@ejemplo.invalid",
+    "linkedin": "linkedin.com/in/tu-usuario",
+    "github": "github.com/tu-usuario"
+  },
+  "perfil": {
+    "titulo": "Contadora Pública",
+    "experiencia": "3 años de experiencia en contabilidad y control financiero",
+    "resumen": "Contadora Pública con 3 años en contabilidad, impuestos y control financiero. Inglés B1.",
+    "diferencial": "Una frase sobre lo que te hace distinta frente a otros candidatos.",
+    "trayectoria": "Empresa A (Cargo, 2024 – actual) · Empresa B (Cargo, 2022 – 2024)."
+  },
+  "formularios": {
+    "Ciudad donde vives / dirección": "Medellín, Colombia",
+    "Aspiración salarial": "$4.000.000 COP al mes",
+    "Nivel de inglés": "B1",
+    "¿Autorizado para trabajar en Colombia?": "Sí",
+    "ERP / software que manejas": "Siigo y Excel avanzado"
+  },
+  "logros": [
+    {"logro": "Concilió 8 cuentas bancarias y detectó un sobrepago de impuestos de $20 millones, corregido con sustento normativo.",
+     "usar_en": "Contable, tributario, auditoría"},
+    {"logro": "Documentó 5 procedimientos contables con roles, controles e indicadores.",
+     "usar_en": "Calidad, procesos, mejora continua"}
+  ],
+  "busqueda": {
+    "ciudadBase": "Medellín",
+    "umbralAprobar": 60,
+    "limitePorCorrida": 12,
+    "maxSeguimientos": 2,
+    "casos": [
+      {"palabras": "contador, contable, contabilidad, accountant, impuestos, auditor, financiero, QA, tester, testing",
+       "contrato": "tiempo_completo", "modalidad": "remoto_ciudad", "salarioMinimo": 3500000},
+      {"palabras": "revisor fiscal, revisoría fiscal",
+       "contrato": "parcial", "modalidad": "remoto", "salarioMinimo": 1500000}
+    ]
+  }
+}

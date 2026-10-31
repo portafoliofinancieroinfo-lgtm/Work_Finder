@@ -1,0 +1,24 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/proteger_base.py\""
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__.*__send_message|mcp__.*__reply|mcp__claude-in-chrome__file_upload",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/confirmar_envio.py\""
+          }
+        ]
+      }
+    ]
+  }
+}
