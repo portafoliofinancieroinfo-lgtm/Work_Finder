@@ -1,8 +1,8 @@
-"""Pruebas del CRM: python "Programa del CRM/pruebas.py"   (o con -v para ver cada una)
+"""Pruebas del CRM: python "Programa CRM/pruebas.py"   (o con -v para ver cada una)
 
-Nunca tocan tu base: crean una base de ejemplo (crear_base.py --demo, con mis_datos.ejemplo.json) en una carpeta temporal y
+Nunca tocan tu base: crean una base de ejemplo (crear_base.py --demo, con sus datos de ejemplo) en una carpeta temporal y
 cada prueba trabaja sobre su propia copia. Cubren el puntaje (y la paridad con puntaje.js si hay node), los comandos de comandos.py, que un ERROR no
-cambie nada, y la API de abrir_pagina.py. Es el paso 5 de "Mantener el código" en como_usar_la_base_de_datos.md: todo debe salir OK.
+cambie nada, y la API de abrir_pagina.py. Es el paso 5 de "Revisar o simplificar el código" en .claude/CLAUDE.md: todo debe salir OK.
 Solo usa la biblioteca estándar de Python.
 """
 import json
@@ -37,7 +37,7 @@ def setUpModule():
     global TMP, MOLDE
     TMP = tempfile.mkdtemp(prefix="finder-pruebas-")
     MOLDE = os.path.join(TMP, "molde.db")
-    crear_base.crear(MOLDE, crear_base.cargar(crear_base.EJEMPLO), demo=True, hoy=HOY)
+    crear_base.crear(MOLDE, crear_base.EJEMPLO, demo=True, hoy=HOY)
 
 
 def tearDownModule():

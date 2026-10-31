@@ -1,12 +1,13 @@
-"""Crea la base del CRM (Programa del CRM/postulaciones.db) a partir de tu mis_datos.json.
+"""Crea la base del CRM (Programa CRM/postulaciones.db) a partir de tu mis_datos.json.
 
 Uso:
-  python "Programa del CRM/crear_base.py"                 crea la base con tus datos (mis_datos.json en la carpeta principal)
-  python "Programa del CRM/crear_base.py" --demo          la crea con vacantes de ejemplo para probar el CRM
-  python "Programa del CRM/crear_base.py" --perfil otro.json --db otra.db
+  python "Programa CRM/crear_base.py"                 crea la base con tus datos (mis_datos.json en la carpeta principal)
+  python "Programa CRM/crear_base.py" --plantilla     escribe mis_datos.json con datos de ejemplo para que pongas los tuyos
+  python "Programa CRM/crear_base.py" --demo          la crea con vacantes de ejemplo para probar el CRM
+  python "Programa CRM/crear_base.py" --perfil otro.json --db otra.db
 
 Nunca pisa una base que ya existe: si ya hay una, se detiene. Si algo falla no deja nada a medias.
-Los datos se llenan copiando mis_datos.ejemplo.json a mis_datos.json (ver el README). Solo usa la biblioteca estándar.
+Los datos van en mis_datos.json: --plantilla lo crea y tú lo llenas (ver el README). Solo usa la biblioteca estándar.
 """
 import argparse
 import copy
@@ -26,7 +27,6 @@ import leer_y_guardar  # noqa: E402
 import puntaje  # noqa: E402
 import abrir_pagina  # noqa: E402
 
-EJEMPLO = os.path.join(RAIZ, "mis_datos.ejemplo.json")
 SECCIONES = ("contacto", "perfil", "formularios")
 CONTRATOS = ("tiempo_completo", "parcial", "cualquiera")
 MODALIDADES = tuple(puntaje.MODALIDAD_CASO)
@@ -62,6 +62,61 @@ DEMO = [
      "aviso": "Aviso de ejemplo que pide 8 años en SAP.", "excluyente": "8 años en SAP"},
 ]
 
+# Datos de ejemplo: los usa --demo y --plantilla los copia a mis_datos.json para que pongas los tuyos.
+EJEMPLO = {
+    "contacto": {
+        "nombre": "Camila Ejemplo",
+        "telefono": "+57 300 000 0000",
+        "correo": "camila.ejemplo@ejemplo.invalid",
+        "linkedin": "linkedin.com/in/tu-usuario",
+        "github": "github.com/tu-usuario"
+    },
+    "perfil": {
+        "titulo": "Contadora Pública",
+        "experiencia": "3 años de experiencia en contabilidad y control financiero",
+        "resumen": "Contadora Pública con 3 años en contabilidad, impuestos y control financiero. Inglés B1.",
+        "diferencial": "Una frase sobre lo que te hace distinta frente a otros candidatos.",
+        "trayectoria": "Empresa A (Cargo, 2024 – actual) · Empresa B (Cargo, 2022 – 2024)."
+    },
+    "formularios": {
+        "Ciudad donde vives / dirección": "Medellín, Colombia",
+        "Aspiración salarial": "$4.000.000 COP al mes",
+        "Nivel de inglés": "B1",
+        "¿Autorizado para trabajar en Colombia?": "Sí",
+        "ERP / software que manejas": "Siigo y Excel avanzado"
+    },
+    "logros": [
+        {
+            "logro": "Concilió 8 cuentas bancarias y detectó un sobrepago de impuestos de $20 millones, corregido con sustento normativo.",
+            "usar_en": "Contable, tributario, auditoría"
+        },
+        {
+            "logro": "Documentó 5 procedimientos contables con roles, controles e indicadores.",
+            "usar_en": "Calidad, procesos, mejora continua"
+        }
+    ],
+    "busqueda": {
+        "ciudadBase": "Medellín",
+        "umbralAprobar": 60,
+        "limitePorCorrida": 12,
+        "maxSeguimientos": 2,
+        "casos": [
+            {
+                "palabras": "contador, contable, contabilidad, accountant, impuestos, auditor, financiero, QA, tester, testing",
+                "contrato": "tiempo_completo",
+                "modalidad": "remoto_ciudad",
+                "salarioMinimo": 3500000
+            },
+            {
+                "palabras": "revisor fiscal, revisoría fiscal",
+                "contrato": "parcial",
+                "modalidad": "remoto",
+                "salarioMinimo": 1500000
+            }
+        ]
+    }
+}
+
 PLANTILLAS = [
     ("A", "Postulación sin respuesta (7 a 15 días)", 0,
      "Asunto: Seguimiento — postulación a [Cargo]\n\nCordial saludo,\n\nMe postulé a la vacante de [Cargo] el [fecha] a través de "
@@ -96,7 +151,7 @@ def falla(msg):
 
 def cargar(ruta):
     if not os.path.exists(ruta):
-        falla("no encuentro %s. Copia mis_datos.ejemplo.json a mis_datos.json y llénalo (ver el README)." % ruta)
+        falla("no encuentro %s. Créalo con --plantilla y llénalo (ver el README)." % ruta)
     try:
         with open(ruta, encoding="utf-8-sig") as f:  # -sig: el Bloc de notas de Windows guarda con BOM
             return json.load(f)
@@ -151,8 +206,8 @@ def validar(p):
 
 
 def es_ejemplo(contacto):
-    """True si algún dato de la firma sigue siendo el de mis_datos.ejemplo.json."""
-    ej = cargar(EJEMPLO)["contacto"]
+    """True si algún dato de la firma sigue siendo el de EJEMPLO."""
+    ej = EJEMPLO["contacto"]
     return any(contacto.get(k) == ej.get(k) for k in ("nombre", "telefono", "correo")) \
         or contacto["correo"].endswith(".invalid")
 
@@ -213,11 +268,17 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--perfil", default=os.path.join(RAIZ, "mis_datos.json"))
     ap.add_argument("--db", default=leer_y_guardar.RUTA)
-    ap.add_argument("--demo", action="store_true", help="agrega vacantes de ejemplo y usa mis_datos.ejemplo.json si no hay mis_datos.json")
+    ap.add_argument("--demo", action="store_true", help="agrega vacantes de ejemplo y usa los datos de ejemplo si no hay mis_datos.json")
+    ap.add_argument("--plantilla", action="store_true", help="escribe mis_datos.json con los datos de ejemplo (no pisa uno existente)")
     a = ap.parse_args()
-    ruta_perfil = a.perfil
-    if a.demo and not os.path.exists(ruta_perfil):
-        ruta_perfil = EJEMPLO
-    crear(a.db, cargar(ruta_perfil), demo=a.demo)
+    if a.plantilla:
+        if os.path.exists(a.perfil):
+            falla("ya existe %s. No lo piso." % a.perfil)
+        with open(a.perfil, "w", encoding="utf-8") as f:
+            json.dump(EJEMPLO, f, ensure_ascii=False, indent=2)
+        print("Listo: %s. Cambia los datos de ejemplo por los tuyos y vuelve a correr sin --plantilla." % a.perfil)
+        sys.exit(0)
+    perfil = EJEMPLO if a.demo and not os.path.exists(a.perfil) else cargar(a.perfil)
+    crear(a.db, perfil, demo=a.demo)
     print("Listo: %s" % a.db)
-    print("Siguiente paso: abre el CRM con 'Abrir CRM.bat' (o python \"Programa del CRM/abrir_pagina.py\").")
+    print("Siguiente paso: abre el CRM con 'Abrir CRM.bat' (o python \"Programa CRM/abrir_pagina.py\").")

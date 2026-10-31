@@ -1,4 +1,4 @@
-"""Programa del CRM del CRM: un archivo SQLite, Programa del CRM/postulaciones.db.
+"""Programa CRM del CRM: un archivo SQLite, Programa CRM/postulaciones.db.
 
 Cada colección (vacantes, empresas, borradores, config, corridas) es una tabla (id, data) con el documento
 en JSON, igual que lo usan comandos.py, puntaje.py y la página. Las vistas *_v sacan columnas para consultar.

@@ -1,4 +1,4 @@
-"""Escribe en el CRM (Programa del CRM/postulaciones.db) sin pisar datos.
+"""Escribe en el CRM (Programa CRM/postulaciones.db) sin pisar datos.
 
 El modelo no edita la base a mano: llena un JSON de entrada simple (o usa un comando corto) y corre este
 script, que guarda todo en una sola transacción (o nada, si algo falla). El script se encarga de:
@@ -8,18 +8,18 @@ script, que guarda todo en una sola transacción (o nada, si algo falla). El scr
 Las listas de etapas, resultados, alertas, tipos y modalidades se leen de pagina.html (la página, una sola fuente).
 
 Uso:
-  python "Programa del CRM/comandos.py" nuevas          <entrada.json> <AAAA-MM-DD>
-  python "Programa del CRM/comandos.py" cambios         <entrada.json> <AAAA-MM-DD>
-  python "Programa del CRM/comandos.py" vencidas        <AAAA-MM-DD>
-  python "Programa del CRM/comandos.py" aprobar         <AAAA-MM-DD> <id> [<id> ...]
-  python "Programa del CRM/comandos.py" cerrar-vencidas <AAAA-MM-DD>
-  python "Programa del CRM/comandos.py" registro        <AAAA-MM-DD> <entrada.json>
-  python "Programa del CRM/comandos.py" perfil
-  python "Programa del CRM/comandos.py" editar-perfil   <entrada.json>
-  python "Programa del CRM/comandos.py" consulta        "<SELECT ...>"
+  python "Programa CRM/comandos.py" nuevas          <entrada.json> <AAAA-MM-DD>
+  python "Programa CRM/comandos.py" cambios         <entrada.json> <AAAA-MM-DD>
+  python "Programa CRM/comandos.py" vencidas        <AAAA-MM-DD>
+  python "Programa CRM/comandos.py" aprobar         <AAAA-MM-DD> <id> [<id> ...]
+  python "Programa CRM/comandos.py" cerrar-vencidas <AAAA-MM-DD>
+  python "Programa CRM/comandos.py" registro        <AAAA-MM-DD> <entrada.json>
+  python "Programa CRM/comandos.py" perfil
+  python "Programa CRM/comandos.py" editar-perfil   <entrada.json>
+  python "Programa CRM/comandos.py" consulta        "<SELECT ...>"
 Con --db <ruta> al inicio se usa otra base (para pruebas).
 
-Ver .claude/como_usar_la_base_de_datos.md para el formato de cada entrada.
+Ver "La base del CRM" en .claude/CLAUDE.md para el formato de cada entrada.
 """
 import copy
 import json

@@ -1,8 +1,8 @@
 """Gemelo en Python de puntaje.js, para calificar vacantes en las corridas.
 
 Las reglas deben coincidir con puntaje.js. Uso desde la línea de comandos:
-    python "Programa del CRM/puntaje.py" vacante.json [ajustes.json] [AAAA-MM-DD]
-    python "Programa del CRM/puntaje.py" --paridad <ruta de postulaciones.db> <AAAA-MM-DD>
+    python "Programa CRM/puntaje.py" vacante.json [ajustes.json] [AAAA-MM-DD]
+    python "Programa CRM/puntaje.py" --paridad <ruta de postulaciones.db> <AAAA-MM-DD>
 --paridad califica todas las vacantes de esa base con este archivo y con puntaje.js (necesita node) y dice si coinciden.
 """
 import json

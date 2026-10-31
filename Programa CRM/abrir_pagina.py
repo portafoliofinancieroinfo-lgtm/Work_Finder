@@ -1,4 +1,4 @@
-"""Abre el CRM en este computador: python "Programa del CRM/abrir_pagina.py" [--db ruta] [--sin-navegador]
+"""Abre el CRM en este computador: python "Programa CRM/abrir_pagina.py" [--db ruta] [--sin-navegador]
 
 Sirve la página (pagina.html, puntaje.js y la HV) y una API mínima sobre postulaciones.db:
   GET  /api/<coleccion>        -> [{"id", "data"}, ...]

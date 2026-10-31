@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/bloquear_cambios_a_mano_en_la_base.py\""
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/protecciones.py\""
           }
         ]
       },
@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/pedir_permiso_antes_de_enviar.py\""
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/protecciones.py\""
           }
         ]
       }

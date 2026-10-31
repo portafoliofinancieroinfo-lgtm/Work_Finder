@@ -4,7 +4,7 @@ CRM de postulaciones de empleo que corre en tu computador y se opera con [Claude
 Guarda cada vacante, calcula un puntaje según lo que tú buscas, escribe las cartas y los seguimientos, y deja en el
 historial **quién autorizó cada envío**. Claude propone; tú dices "sí".
 
-- Programa del CRM local en SQLite (un archivo). Sin nube, sin cuentas, sin dependencias: solo Python.
+- Programa CRM local en SQLite (un archivo). Sin nube, sin cuentas, sin dependencias: solo Python.
 - Página del CRM en `http://localhost:8765` (embudo, vacantes, borradores, ajustes).
 - Claude no escribe la base a mano: todo pasa por `comandos.py`, con validaciones y transacciones (o se guarda todo, o nada).
 - Hooks que bloquean escribir la base por fuera de `comandos.py` y piden tu confirmación antes de cada correo enviado.
@@ -21,12 +21,12 @@ historial **quién autorizó cada envío**. Claude propone; tú dices "sí".
 ## Probarlo en 1 minuto (sin tus datos)
 
 ```bash
-python "Programa del CRM/crear_base.py" --demo
-python "Programa del CRM/abrir_pagina.py"
+python "Programa CRM/crear_base.py" --demo
+python "Programa CRM/abrir_pagina.py"
 ```
 
 Se crea una base con una persona y cuatro vacantes inventadas, y se abre `http://localhost:8765`.
-Borra `Programa del CRM/postulaciones.db` antes de crear la tuya.
+Borra `Programa CRM/postulaciones.db` antes de crear la tuya.
 
 ## Montarlo con tus datos
 
@@ -41,10 +41,10 @@ Borra `Programa del CRM/postulaciones.db` antes de crear la tuya.
 ### Paso 2. Llena `mis_datos.json`
 
 ```bash
-cp mis_datos.ejemplo.json mis_datos.json
+python "Programa CRM/crear_base.py" --plantilla
 ```
 
-(En Windows: `copy mis_datos.ejemplo.json mis_datos.json`.) Edita `mis_datos.json` con tus datos. `mis_datos.json` está en `.gitignore`: no se sube.
+Eso crea `mis_datos.json` con datos de ejemplo. Cámbialos por los tuyos. `mis_datos.json` está en `.gitignore`: no se sube.
 
 | Sección | Qué lleva | Obligatorio |
 |---|---|---|
@@ -71,13 +71,13 @@ Con Claude Code puedes saltarte la edición a mano: abre la carpeta, escribe **"
 ### Paso 3. Crea tu base
 
 ```bash
-python "Programa del CRM/crear_base.py"
+python "Programa CRM/crear_base.py"
 ```
 
 Revisa que todo quedó bien:
 
 ```bash
-python "Programa del CRM/comandos.py" perfil
+python "Programa CRM/comandos.py" perfil
 ```
 
 `crear_base.py` nunca pisa una base que ya existe. Se detiene si tu nombre, teléfono o correo siguen siendo los del ejemplo, si dejaste
@@ -88,19 +88,19 @@ un `<marcador>` sin llenar o si un ajuste de búsqueda tiene un tipo o un nombre
 Doble clic en `Abrir CRM.bat` (Windows) o:
 
 ```bash
-python "Programa del CRM/abrir_pagina.py"
+python "Programa CRM/abrir_pagina.py"
 ```
 
 Se abre `http://localhost:8765`. Solo escucha en tu equipo (127.0.0.1). En la pestaña **Ajustes** puedes cambiar después los casos de búsqueda.
 
 ### Paso 5. Ajusta tus criterios de decisión
 
-Edita `.claude/como_elegir_vacantes_y_escribir_cartas.md`: qué avisos no quieres ver, cuáles descartas por estafa y cómo deben ser tus cartas.
+Edita la sección "Qué vacantes sirven y cómo escribir" de `.claude/CLAUDE.md`: qué avisos no quieres ver, cuáles descartas por estafa y cómo deben ser tus cartas.
 Es el archivo que Claude lee para decidir por ti qué vacantes registrar.
 
 ## Cómo se usa con Claude Code
 
-Abre esta carpeta con Claude Code. Lee `.claude/CLAUDE.md`, `.claude/prohibiciones.md` y `.claude/como_usar_la_base_de_datos.md`. Después pídele una acción:
+Abre esta carpeta con Claude Code. Claude lee `.claude/CLAUDE.md` (sus instrucciones y prohibiciones). Después pídele una acción:
 
 | Dile | Qué hace |
 |---|---|
@@ -110,7 +110,7 @@ Abre esta carpeta con Claude Code. Lee `.claude/CLAUDE.md`, `.claude/prohibicion
 | Cuéntale un WhatsApp, una llamada o un referido | Lo registra como "búsqueda externa" |
 
 Toda acción termina con un **resumen numerado** de lo que espera tu decisión. Claude no aprueba, postula ni envía nada sin tu "sí" en el chat
-(ver `.claude/prohibiciones.md`), y cada envío queda en el historial de la vacante con lo que respondiste.
+(ver "Prohibiciones" en `.claude/CLAUDE.md`), y cada envío queda en el historial de la vacante con lo que respondiste.
 
 Necesitas crear en Gmail las etiquetas que usa la Acción 1 (Postulaciones, Activo, Requiere respuesta, Cerrado, Ruido).
 
@@ -120,8 +120,7 @@ Necesitas crear en Gmail las etiquetas que usa la Acción 1 (Postulaciones, Acti
 
 ```
 Abrir CRM.bat                  doble clic: abre el CRM en el navegador
-mis_datos.ejemplo.json         plantilla de tus datos (cópiala como mis_datos.json y llénala)
-mis_datos.json                 tus datos (no se sube a git)
+mis_datos.json                 tus datos (lo crea crear_base.py --plantilla; no se sube a git)
 Mi hoja de vida/               tu HV.pdf de 2 páginas (no se sube a git)
 README.md                      esta guía
 ```
@@ -129,7 +128,7 @@ README.md                      esta guía
 **El programa** (no hace falta abrirlo):
 
 ```
-Programa del CRM/
+Programa CRM/
   postulaciones.db             la base: vacantes, empresas, historial (no se sube a git)
   pagina.html                  la página del CRM
   abrir_pagina.py              la sirve en localhost (lo usa Abrir CRM.bat)
@@ -144,19 +143,15 @@ Programa del CRM/
 
 ```
 .claude/
-  CLAUDE.md                                   las acciones, paso a paso
-  prohibiciones.md                            lo que Claude no puede hacer
-  como_elegir_vacantes_y_escribir_cartas.md   qué vacantes sirven y cómo escribir cartas
-  como_usar_la_base_de_datos.md               formatos de entrada y mantenimiento del código
-  settings.json                               activa los hooks
-  hooks/bloquear_cambios_a_mano_en_la_base.py la base solo se escribe con comandos.py
-  hooks/pedir_permiso_antes_de_enviar.py      pide tu sí antes de cada correo o adjunto
+  CLAUDE.md          todas las instrucciones: prohibiciones, acciones, qué vacantes sirven, la base y el código
+  protecciones.py    la base solo se escribe con comandos.py y pide tu sí antes de cada correo o adjunto
+  settings.json      activa protecciones.py
 ```
 
 ## Pruebas
 
 ```bash
-python "Programa del CRM/pruebas.py"
+python "Programa CRM/pruebas.py"
 ```
 
 Crean su propia base de ejemplo en una carpeta temporal; nunca tocan la tuya.
@@ -171,7 +166,7 @@ las listas de `pagina.html`). Si buscas en otro rubro, cambia esos nombres **en 
 ## Privacidad
 
 - `postulaciones.db`, `mis_datos.json` y `Mi hoja de vida/` están en `.gitignore`: tu información no se sube.
-- Si guardas la carpeta en Drive, Dropbox u otra nube, la base viaja con ella: usa **un solo equipo a la vez** (ver `.claude/como_usar_la_base_de_datos.md`).
+- Si guardas la carpeta en Drive, Dropbox u otra nube, la base viaja con ella: usa **un solo equipo a la vez** (ver "La base del CRM" en `.claude/CLAUDE.md`).
 - Antes de publicar un fork, revisa con `git status` que no haya subido nada tuyo.
 
 ## Licencia

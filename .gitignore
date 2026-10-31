@@ -1,9 +1,9 @@
 # Tus datos nunca se suben
 mis_datos.json
-Programa del CRM/postulaciones.db
-Programa del CRM/postulaciones.db-*
-Programa del CRM/postulaciones.db.nuevo
-Programa del CRM/postulaciones (*.db
+Programa CRM/postulaciones.db
+Programa CRM/postulaciones.db-*
+Programa CRM/postulaciones.db.nuevo
+Programa CRM/postulaciones (*.db
 Mi hoja de vida/*
 !Mi hoja de vida/LEEME.md
 *.local.json

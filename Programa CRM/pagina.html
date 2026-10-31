@@ -318,7 +318,7 @@ label.chk { display: flex; gap: 8px; align-items: center; font-size: .9rem; }
       if (reintentar && e && e.code === "conflict") throw e;
       toast(e && e.code === "not_found" ? "No se pudo guardar: ese registro ya no existe en la base."
         : e && e.code === "conflict" ? "No se guardó: el registro cambió mientras lo editabas (una acción de Claude u otra pestaña). En unos segundos se recarga: vuelve a intentarlo."
-        : "No se pudo guardar. Revisa que \"Programa del CRM/abrir_pagina.py\" siga abierto e intenta de nuevo.", true);
+        : "No se pudo guardar. Revisa que \"Programa CRM/abrir_pagina.py\" siga abierto e intenta de nuevo.", true);
       throw e;
     }
   }
@@ -355,7 +355,7 @@ label.chk { display: flex; gap: 8px; align-items: center; font-size: .9rem; }
     await actualizarVacante(id, cambios, { tipo: "cambio_etapa", texto: txt + " · desde el CRM" });
   }
 
-  // ---------- Base local (Programa del CRM/abrir_pagina.py sobre Programa del CRM/postulaciones.db) ----------
+  // ---------- Base local (Programa CRM/abrir_pagina.py sobre Programa CRM/postulaciones.db) ----------
   // Misma forma que usaba la página: collection().limit().orderBy().onSnapshot y doc().get/set/update/onSnapshot.
   // ponytail: se refresca cada 5 s y después de cada escritura; otra pestaña abierta tarda hasta 5 s en ver un cambio.
   async function dbLocal() {
@@ -420,7 +420,7 @@ label.chk { display: flex; gap: 8px; align-items: center; font-size: .9rem; }
     render();
     const db = await dbLocal();
     if (!db) {
-      bannerMsg("No se pudo abrir la base del CRM. Abre el CRM con: python \"Programa del CRM/abrir_pagina.py\"", true);
+      bannerMsg("No se pudo abrir la base del CRM. Abre el CRM con: python \"Programa CRM/abrir_pagina.py\"", true);
       S.cargado = { vac: true, emp: true, bor: true }; render(); return;
     }
     S.db = db;
