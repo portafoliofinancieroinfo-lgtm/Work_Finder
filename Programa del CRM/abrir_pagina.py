@@ -1,6 +1,6 @@
-"""Abre el CRM en este computador: python "Base de datos/servir.py" [--db ruta] [--sin-navegador]
+"""Abre el CRM en este computador: python "Programa del CRM/abrir_pagina.py" [--db ruta] [--sin-navegador]
 
-Sirve la página (index.html, motor.js y la HV) y una API mínima sobre finder.db:
+Sirve la página (pagina.html, puntaje.js y la HV) y una API mínima sobre postulaciones.db:
   GET  /api/<coleccion>        -> [{"id", "data"}, ...]
   POST /api/<coleccion>/<id>   cuerpo {"op": "set"|"update", "data": {...}}
        Con "_rev" en data: 409 si el registro cambió desde esa versión. 409 también si acorta el historial de una vacante.
@@ -16,20 +16,20 @@ sys.stdout.reconfigure(encoding="utf-8")
 AQUI = os.path.dirname(os.path.abspath(__file__))
 RAIZ = os.path.dirname(AQUI)  # Finder_Work: ahí están las carpetas de contexto (la HV)
 sys.path.insert(0, AQUI)
-import base  # noqa: E402
-import motor  # noqa: E402
+import leer_y_guardar  # noqa: E402
+import puntaje  # noqa: E402
 
 PUERTO = 8765
 HOSTS = {"127.0.0.1:%d" % PUERTO, "localhost:%d" % PUERTO}
-ARCHIVOS = {"/": (os.path.join(AQUI, "index.html"), "text/html; charset=utf-8"),
-            "/motor.js": (os.path.join(AQUI, "motor.js"), "text/javascript; charset=utf-8"),
-            "/hv/HV.pdf": (os.path.join(RAIZ, "Contexto postulante", "HV.pdf"), "application/pdf")}
+ARCHIVOS = {"/": (os.path.join(AQUI, "pagina.html"), "text/html; charset=utf-8"),
+            "/puntaje.js": (os.path.join(AQUI, "puntaje.js"), "text/javascript; charset=utf-8"),
+            "/hv/HV.pdf": (os.path.join(RAIZ, "Mi hoja de vida", "HV.pdf"), "application/pdf")}
 
 
 def ajustes_invalidos(a):
     """Qué ajuste tiene un tipo que el puntaje no sabe usar (un texto donde va un número), o None si todo está bien."""
-    numero = lambda x: isinstance(x, (int, float)) and not isinstance(x, bool)  # noqa: E731
-    for k, base_ in motor.AJUSTES_BASE.items():
+    numero = lambda x: puntaje.num(x) is not None  # noqa: E731
+    for k, base_ in puntaje.AJUSTES_BASE.items():
         if k not in a:
             continue
         if numero(base_) and not numero(a[k]):
@@ -48,7 +48,7 @@ def ajustes_invalidos(a):
 
 
 class Manejador(http.server.BaseHTTPRequestHandler):
-    ruta_db = base.RUTA
+    ruta_db = leer_y_guardar.RUTA
 
     def responder(self, codigo, cuerpo=b"", tipo="application/json; charset=utf-8"):
         self.send_response(codigo)
@@ -68,7 +68,7 @@ class Manejador(http.server.BaseHTTPRequestHandler):
 
     def coleccion(self):
         partes = self.path.split("?")[0].strip("/").split("/")
-        if len(partes) < 2 or partes[0] != "api" or partes[1] not in base.COLECCIONES:
+        if len(partes) < 2 or partes[0] != "api" or partes[1] not in leer_y_guardar.COLECCIONES:
             return None, None
         return partes[1], (partes[2] if len(partes) == 3 and partes[2] else None)
 
@@ -85,9 +85,9 @@ class Manejador(http.server.BaseHTTPRequestHandler):
         col, _ = self.coleccion()
         if not col:
             return self.error_json(404, "no existe")
-        con = base.conectar(self.ruta_db)
+        con = leer_y_guardar.conectar(self.ruta_db)
         try:
-            filas = [{"id": i, "data": d} for i, d in sorted(base.leer(con, col).items())]
+            filas = [{"id": i, "data": d} for i, d in sorted(leer_y_guardar.leer(con, col).items())]
         finally:
             con.close()
         self.responder(200, json.dumps(filas, ensure_ascii=False).encode("utf-8"))
@@ -107,11 +107,11 @@ class Manejador(http.server.BaseHTTPRequestHandler):
                 raise ValueError
         except (ValueError, KeyError, TypeError):
             return self.error_json(400, "pedido inválido")
-        con = base.conectar(self.ruta_db)
+        con = leer_y_guardar.conectar(self.ruta_db)
         try:
-            con.execute("BEGIN IMMEDIATE")  # leer y escribir sin que crm.py escriba en medio
+            con.execute("BEGIN IMMEDIATE")  # leer y escribir sin que comandos.py escriba en medio
             with con:
-                actual = base.leer_uno(con, col, doc_id)
+                actual = leer_y_guardar.leer_uno(con, col, doc_id)
                 if op == "update" and actual is None:
                     return self.error_json(404, "no existe %s/%s" % (col, doc_id))
                 # "_rev" = la versión que leyó la página. Si cambió desde entonces no se escribe y la página relee.
@@ -125,7 +125,7 @@ class Manejador(http.server.BaseHTTPRequestHandler):
                         return self.error_json(400, "ajuste inválido: %s" % malo)
                 if col == "vacantes" and actual and len(nuevo.get("historial") or []) < len(actual.get("historial") or []):
                     return self.error_json(409, "no se puede acortar el historial de %s" % doc_id)
-                base.guardar(con, col, doc_id, nuevo)
+                leer_y_guardar.guardar(con, col, doc_id, nuevo)
         finally:
             con.close()
         self.responder(204)

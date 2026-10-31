@@ -1,25 +1,25 @@
-"""Escribe en el CRM (Base de datos/finder.db) sin pisar datos.
+"""Escribe en el CRM (Programa del CRM/postulaciones.db) sin pisar datos.
 
 El modelo no edita la base a mano: llena un JSON de entrada simple (o usa un comando corto) y corre este
 script, que guarda todo en una sola transacción (o nada, si algo falla). El script se encarga de:
-  - ids nuevos, valores por defecto, puntaje (motor.py), etapa según Ajustes, carta y borrador de correo;
+  - ids nuevos, valores por defecto, puntaje (puntaje.py), etapa según Ajustes, carta y borrador de correo;
   - agregar al historial sin borrar lo anterior;
   - la próxima acción según la cadencia de Ajustes.
-Las listas de etapas, resultados, alertas, tipos y modalidades se leen de index.html (la página, una sola fuente).
+Las listas de etapas, resultados, alertas, tipos y modalidades se leen de pagina.html (la página, una sola fuente).
 
 Uso:
-  python "Base de datos/crm.py" nuevas          <entrada.json> <AAAA-MM-DD>
-  python "Base de datos/crm.py" cambios         <entrada.json> <AAAA-MM-DD>
-  python "Base de datos/crm.py" vencidas        <AAAA-MM-DD>
-  python "Base de datos/crm.py" aprobar         <AAAA-MM-DD> <id> [<id> ...]
-  python "Base de datos/crm.py" cerrar-vencidas <AAAA-MM-DD>
-  python "Base de datos/crm.py" registro        <AAAA-MM-DD> <entrada.json>
-  python "Base de datos/crm.py" perfil
-  python "Base de datos/crm.py" editar-perfil   <entrada.json>
-  python "Base de datos/crm.py" consulta        "<SELECT ...>"
+  python "Programa del CRM/comandos.py" nuevas          <entrada.json> <AAAA-MM-DD>
+  python "Programa del CRM/comandos.py" cambios         <entrada.json> <AAAA-MM-DD>
+  python "Programa del CRM/comandos.py" vencidas        <AAAA-MM-DD>
+  python "Programa del CRM/comandos.py" aprobar         <AAAA-MM-DD> <id> [<id> ...]
+  python "Programa del CRM/comandos.py" cerrar-vencidas <AAAA-MM-DD>
+  python "Programa del CRM/comandos.py" registro        <AAAA-MM-DD> <entrada.json>
+  python "Programa del CRM/comandos.py" perfil
+  python "Programa del CRM/comandos.py" editar-perfil   <entrada.json>
+  python "Programa del CRM/comandos.py" consulta        "<SELECT ...>"
 Con --db <ruta> al inicio se usa otra base (para pruebas).
 
-Ver Base de datos/CRM.md para el formato de cada entrada.
+Ver .claude/como_usar_la_base_de_datos.md para el formato de cada entrada.
 """
 import copy
 import json
@@ -33,8 +33,8 @@ sys.stdout.reconfigure(encoding="utf-8")  # la consola de Windows (cp1252) no im
 sys.stderr.reconfigure(encoding="utf-8")  # ni las tildes de los mensajes de error
 AQUI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, AQUI)
-import base  # noqa: E402
-import motor  # noqa: E402
+import leer_y_guardar  # noqa: E402
+import puntaje  # noqa: E402
 
 
 def falla(msg):
@@ -42,28 +42,28 @@ def falla(msg):
 
 
 def _listas_de_la_pagina():
-    """Lee las listas de index.html (la página) para no tener copias que se desfasen."""
-    with open(os.path.join(AQUI, "index.html"), encoding="utf-8") as f:
+    """Lee las listas de pagina.html (la página) para no tener copias que se desfasen."""
+    with open(os.path.join(AQUI, "pagina.html"), encoding="utf-8") as f:
         html = f.read()
 
     def bloque(nombre, abre, cierra):
         m = re.search(r"const %s = \%s(.*?)\%s;" % (nombre, abre, cierra), html, re.S)
         if not m:
-            falla("no encuentro 'const %s' en index.html" % nombre)
+            falla("no encuentro 'const %s' en pagina.html" % nombre)
         return m.group(1)
 
     pares = lambda txt: re.findall(r'\["(\w+)",', txt)  # noqa: E731
     llaves = lambda txt: re.findall(r"(\w+):\s*[\[\"]", txt)  # noqa: E731
     sin_nov = re.search(r'const SIN_NOVEDAD = "([^"]+)"', html)
     if not sin_nov:
-        falla("no encuentro 'const SIN_NOVEDAD' en index.html")
+        falla("no encuentro 'const SIN_NOVEDAD' en pagina.html")
     return (pares(bloque("ETAPAS", "[", "]")), llaves(bloque("RESULTADOS", "{", "}")),
             llaves(bloque("ALERTAS", "{", "}")), llaves(bloque("TIPOS_HIST", "{", "}")),
             pares("[" + bloque("MODALIDADES", "[", "]")), pares("[" + bloque("CONTRATOS", "[", "]")), sin_nov.group(1))
 
 
 ETAPAS, RESULTADOS, ALERTAS, TIPOS_HIST, MODALIDADES, CONTRATOS, SIN_NOVEDAD = _listas_de_la_pagina()
-PERFILES = list(motor.PUNTOS_PERFIL)
+PERFILES = list(puntaje.PUNTOS_PERFIL)
 TEXTO_SIN_NOVEDAD = SIN_NOVEDAD + ": si no hay novedad, cerrar como sin respuesta"
 MAX_PALABRAS = 150
 
@@ -103,22 +103,22 @@ def leer_json(p):
 
 def cargar(con):
     """(vacantes, empresas, ajustes) del CRM."""
-    ajustes = motor._ajustes(base.leer_uno(con, "config", "ajustes") or {})
-    return base.leer(con, "vacantes"), base.leer(con, "empresas"), ajustes
+    ajustes = puntaje._ajustes(leer_y_guardar.leer_uno(con, "config", "ajustes") or {})
+    return leer_y_guardar.leer(con, "vacantes"), leer_y_guardar.leer(con, "empresas"), ajustes
 
 
 def guardar_todo(con, writes, resumen):
     """Aplica las escrituras en una sola transacción: o se guardan todas o ninguna."""
     with con:
         for op, coleccion_, doc_id, data in writes:
-            (base.guardar if op == "set" else base.actualizar)(con, coleccion_, doc_id, data)
+            (leer_y_guardar.guardar if op == "set" else leer_y_guardar.actualizar)(con, coleccion_, doc_id, data)
     print("\n".join(resumen))
     print("\n%d escrituras guardadas en el CRM." % len(writes) if writes else "\nNada que escribir.")
 
 
 def mas_dias(fecha, n):
     try:
-        d = motor.fecha(fecha)
+        d = puntaje.fecha(fecha)
         if d:
             return (d + timedelta(days=int(n))).isoformat()
     except (TypeError, ValueError):
@@ -127,7 +127,7 @@ def mas_dias(fecha, n):
 
 
 def clave(s):
-    return re.sub(r"\s+", " ", motor.sin_tildes(s))
+    return re.sub(r"\s+", " ", puntaje.sin_tildes(s))
 
 
 def slug(nombre_clave):
@@ -165,13 +165,24 @@ def pasar_a_postulada(v, fecha, ajustes, empresas):
         proxima = {"fecha": mas_dias(fecha, ajustes["diasCierreSinNovedad"]), "texto": TEXTO_SIN_NOVEDAD}
     d = {"etapa": "postulada", "estadoPortal": "Postulado", "fechaPostulacion": fecha, "resultado": None,
          "proximaAccion": proxima}
-    if ETAPAS.index("postulada") > ETAPAS.index(v.get("etapaMax") or "descubierta"):
-        d["etapaMax"] = "postulada"
+    subir_etapa_max(v, "postulada", d)
     return d
 
 
+def subir_etapa_max(v, etapa, d):
+    """etapaMax solo sube: guarda la etapa más lejana a la que llegó la vacante (la usa el embudo)."""
+    if ETAPAS.index(etapa) > ETAPAS.index(v.get("etapaMax") or "descubierta"):
+        d["etapaMax"] = etapa
+
+
+def valida_campo(k, val):
+    """perfil, modalidad y contrato solo aceptan los valores de su lista (contrato puede ser null)."""
+    if k in ("perfil", "modalidad") or (k == "contrato" and val is not None):
+        valida(val, {"perfil": PERFILES, "modalidad": MODALIDADES, "contrato": CONTRATOS}[k], k)
+
+
 def proxima_tras_seguimiento(seg, fecha, ajustes):
-    """Próxima acción después de enviar un seguimiento; misma regla que "Ya lo envié" en index.html."""
+    """Próxima acción después de enviar un seguimiento; misma regla que "Ya lo envié" en pagina.html."""
     if seg >= ajustes["maxSeguimientos"]:
         return {"fecha": mas_dias(fecha, ajustes["diasEntreSeguimientos"]),
                 "texto": "Tope de seguimientos: si no responden, cerrar como sin respuesta"}
@@ -205,12 +216,10 @@ def cmd_nuevas(con, entrada, hoy):
         for c in ["empresa", "cargo", "perfil", "modalidad", "portal", "aviso"]:
             if not it.get(c):
                 falla("a '%s' le falta el campo %s" % (it.get("cargo"), c))
-        valida(it["perfil"], PERFILES, "perfil")
-        valida(it["modalidad"], MODALIDADES, "modalidad")
-        if it.get("contrato") is not None:
-            valida(it["contrato"], CONTRATOS, "contrato")
+        for k in ("perfil", "modalidad", "contrato"):
+            valida_campo(k, it.get(k))
         if it.get("fechaPublicacion"):
-            mas_dias(it["fechaPublicacion"], 0)  # valida el formato: si no, el puntaje difiere del de motor.js
+            mas_dias(it["fechaPublicacion"], 0)  # valida el formato: si no, el puntaje difiere del de puntaje.js
         for a in it.get("alertas") or []:
             valida(a, ALERTAS, "alerta")
         lk = clave(it.get("link"))
@@ -233,13 +242,13 @@ def cmd_nuevas(con, entrada, hoy):
         x = copy.deepcopy(DEFAULTS_VACANTE)
         x.update(fechaRegistro=hoy, ultimaActividad=hoy)
         x.update(it)
-        x["nivel"] = x.get("nivel") or motor.inferir_nivel(x["cargo"])
+        x["nivel"] = x.get("nivel") or puntaje.inferir_nivel(x["cargo"])
         if "empresaId" not in it and not EMPRESA_GENERICA.search(k[0]):
             x["empresaId"] = slug(k[0])
         if excluyente:
             x["alertas"] = sorted(set(x["alertas"]) | {"no_aplica"})
             x["notas"] = (x["notas"] + " Requisito excluyente: " + excluyente).strip()
-        r = motor.puntaje(x, ajustes, hoy)
+        r = puntaje.puntaje(x, ajustes, hoy)
         x["puntaje"], x["neto"] = r["total"], r["presupuesto"]["neto"]
         fecha_h = hoy
         if por_usuario:
@@ -325,8 +334,7 @@ def preparar_cambio(c, v, hoy, ajustes, empresas):
             d.update(etapa="cerrada", resultado=c["resultado"], proximaAccion=None)
         else:
             d.update(etapa=etapa, resultado=None)
-            if ETAPAS.index(etapa) > ETAPAS.index(v.get("etapaMax") or "descubierta"):
-                d["etapaMax"] = etapa
+            subir_etapa_max(v, etapa, d)
     orig = set(v.get("alertas") or [])
     for a in c.get("alertas_mas") or []:
         valida(a, ALERTAS, "alerta")
@@ -344,12 +352,7 @@ def preparar_cambio(c, v, hoy, ajustes, empresas):
         d["proximaAccion"] = pa
     for k, val in (c.get("campos") or {}).items():
         valida(k, CAMPOS_LIBRES, "campo en 'campos'")
-        if k == "modalidad":
-            valida(val, MODALIDADES, "modalidad")
-        if k == "perfil":
-            valida(val, PERFILES, "perfil")
-        if k == "contrato" and val is not None:
-            valida(val, CONTRATOS, "contrato")
+        valida_campo(k, val)
         d[k] = val
     if tipo == "correo_enviado" and "proximaAccion" not in c and d.get("etapa", v.get("etapa")) != "cerrada":
         d["proximaAccion"] = proxima_tras_seguimiento(d.get("seguimientos", v.get("seguimientos") or 0), fecha, ajustes)
@@ -378,7 +381,7 @@ def agregar_contacto(c, v, empresas, writes):
 
 def borrador_enviado(con, c, hoy):
     """`borrador` en una entrada de cambios: Claude envió ese correo desde Gmail con el "sí" del usuario."""
-    b = base.leer_uno(con, "borradores", c["borrador"])
+    b = leer_y_guardar.leer_uno(con, "borradores", c["borrador"])
     if b is None or b.get("vacanteId") != c["id"]:
         falla("el borrador %s no existe o no es de la vacante %s" % (c["borrador"], c["id"]))
     if b.get("estado") == "enviado":
@@ -426,7 +429,7 @@ def cmd_aprobar(con, hoy, *ids):
     if not ids:
         falla("faltan los ids a aprobar")
     for i in ids:  # aprobar una cerrada o ya postulada la devolvería a "aprobada" y borraría su resultado
-        v = base.leer_uno(con, "vacantes", i)
+        v = leer_y_guardar.leer_uno(con, "vacantes", i)
         if v and v.get("etapa") not in ("descubierta", "por_aprobar"):
             falla("%s está en etapa '%s': solo se aprueban las descubiertas o por aprobar" % (i, v.get("etapa")))
     items = [{"id": i, "etapa": "aprobada", "tipo": "cambio_etapa",
@@ -439,7 +442,7 @@ def vencidas(con, hoy):
     """[(grupo, id, vacante)] con próxima acción vencida. Grupo SIN_CONTACTO o ACCION."""
     mas_dias(hoy, 0)
     filas = []
-    for vid, v in sorted(base.leer(con, "vacantes").items()):
+    for vid, v in sorted(leer_y_guardar.leer(con, "vacantes").items()):
         pa = v.get("proximaAccion") or {}
         if v.get("etapa") != "cerrada" and pa.get("fecha") and pa["fecha"] <= hoy:
             grupo = "SIN_CONTACTO" if (pa.get("texto") or "").startswith(SIN_NOVEDAD) else "ACCION"
@@ -475,7 +478,7 @@ def cmd_registro(con, hoy, entrada):
     e = leer_json(entrada)
     if not e.get("resumen") or not isinstance(e.get("detalle", []), list):
         falla("el registro necesita 'resumen' (texto) y 'detalle' (lista)")
-    previo = base.leer_uno(con, "corridas", hoy) or {}
+    previo = leer_y_guardar.leer_uno(con, "corridas", hoy) or {}
     tipos = [t for t in (previo.get("tipo"), e.get("tipo")) if t]
     doc = dict(previo, fecha=hoy, tipo=", ".join(dict.fromkeys(tipos)) or "corrida", resumen=e["resumen"],
                detalle=(previo.get("detalle") or []) + e.get("detalle", []))
@@ -488,7 +491,7 @@ def cmd_perfil(con):
         print("## " + seccion)
         for campo, valor in con.execute("SELECT campo, valor FROM perfil WHERE seccion = ? ORDER BY orden", (seccion,)):
             print("- %s: %s" % (campo, valor))
-    aj = motor._ajustes(base.leer_uno(con, "config", "ajustes"))
+    aj = puntaje._ajustes(leer_y_guardar.leer_uno(con, "config", "ajustes"))
     print("\n## búsqueda (Ajustes del CRM)")
     print("- ciudad base: %s" % (aj["ciudadBase"] or "(falta)"))
     palabras = dict.fromkeys(p.strip() for c in aj["casos"] for p in str(c.get("palabras") or "").split(",") if p.strip())
@@ -556,7 +559,7 @@ COMANDOS = {"nuevas": (cmd_nuevas, 2), "cambios": (cmd_cambios, 2), "vencidas": 
 
 if __name__ == "__main__":
     a = sys.argv[1:]
-    ruta = base.RUTA
+    ruta = leer_y_guardar.RUTA
     if a[:1] == ["--db"] and len(a) > 1:
         ruta, a = a[1], a[2:]
     if a[:1] == ["consulta"] and len(a) == 2:
@@ -568,10 +571,10 @@ if __name__ == "__main__":
     if not cmd or (cmd[1] is not None and len(a) - 1 != cmd[1]) or (cmd[1] is None and len(a) < 3):
         sys.exit(__doc__)
     try:
-        conexion = base.conectar(ruta)
+        conexion = leer_y_guardar.conectar(ruta)
     except FileNotFoundError as e:
         falla(str(e))
     # Bloquea la base mientras corre el comando: lo que lee y lo que escribe es una sola transacción, y la página
-    # (servir.py) espera unos segundos en lugar de escribir en medio.
+    # (abrir_pagina.py) espera unos segundos en lugar de escribir en medio.
     conexion.execute("BEGIN IMMEDIATE")
     cmd[0](conexion, *a[1:])

@@ -1,11 +1,11 @@
 # Tus datos nunca se suben
-perfil.json
-Base de datos/finder.db
-Base de datos/finder.db-*
-Base de datos/finder.db.nuevo
-Base de datos/finder (*.db
-Contexto postulante/*
-!Contexto postulante/LEEME.md
+mis_datos.json
+Programa del CRM/postulaciones.db
+Programa del CRM/postulaciones.db-*
+Programa del CRM/postulaciones.db.nuevo
+Programa del CRM/postulaciones (*.db
+Mi hoja de vida/*
+!Mi hoja de vida/LEEME.md
 *.local.json
 .claude/settings.local.json
 

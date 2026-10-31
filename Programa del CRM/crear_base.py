@@ -1,12 +1,12 @@
-"""Crea la base del CRM (Base de datos/finder.db) a partir de tu perfil.json.
+"""Crea la base del CRM (Programa del CRM/postulaciones.db) a partir de tu mis_datos.json.
 
 Uso:
-  python "Base de datos/iniciar.py"                 crea la base con tus datos (perfil.json en la carpeta principal)
-  python "Base de datos/iniciar.py" --demo          la crea con vacantes de ejemplo para probar el CRM
-  python "Base de datos/iniciar.py" --perfil otro.json --db otra.db
+  python "Programa del CRM/crear_base.py"                 crea la base con tus datos (mis_datos.json en la carpeta principal)
+  python "Programa del CRM/crear_base.py" --demo          la crea con vacantes de ejemplo para probar el CRM
+  python "Programa del CRM/crear_base.py" --perfil otro.json --db otra.db
 
 Nunca pisa una base que ya existe: si ya hay una, se detiene. Si algo falla no deja nada a medias.
-Los datos se llenan copiando perfil.ejemplo.json a perfil.json (ver el README). Solo usa la biblioteca estándar.
+Los datos se llenan copiando mis_datos.ejemplo.json a mis_datos.json (ver el README). Solo usa la biblioteca estándar.
 """
 import argparse
 import copy
@@ -22,16 +22,16 @@ sys.stderr.reconfigure(encoding="utf-8")
 AQUI = os.path.dirname(os.path.abspath(__file__))
 RAIZ = os.path.dirname(AQUI)
 sys.path.insert(0, AQUI)
-import base  # noqa: E402
-import motor  # noqa: E402
-import servir  # noqa: E402
+import leer_y_guardar  # noqa: E402
+import puntaje  # noqa: E402
+import abrir_pagina  # noqa: E402
 
-EJEMPLO = os.path.join(RAIZ, "perfil.ejemplo.json")
+EJEMPLO = os.path.join(RAIZ, "mis_datos.ejemplo.json")
 SECCIONES = ("contacto", "perfil", "formularios")
 CONTRATOS = ("tiempo_completo", "parcial", "cualquiera")
-MODALIDADES = ("remoto", "ciudad", "remoto_ciudad", "mudanza", "cualquiera")
+MODALIDADES = tuple(puntaje.MODALIDAD_CASO)
 
-# Vacantes inventadas para probar el CRM (--demo). Pasan por crm.py nuevas, igual que las reales.
+# Vacantes inventadas para probar el CRM (--demo). Pasan por comandos.py nuevas, igual que las reales.
 DEMO = [
     {"empresa": "Acme Contable SAS", "cargo": "Analista Contable", "perfil": "Contable/Financiero", "modalidad": "remoto",
      "portal": "Computrabajo", "link": "https://ejemplo.invalid/acme-analista-contable", "salarioMin": 4200000,
@@ -96,7 +96,7 @@ def falla(msg):
 
 def cargar(ruta):
     if not os.path.exists(ruta):
-        falla("no encuentro %s. Copia perfil.ejemplo.json a perfil.json y llénalo (ver el README)." % ruta)
+        falla("no encuentro %s. Copia mis_datos.ejemplo.json a mis_datos.json y llénalo (ver el README)." % ruta)
     try:
         with open(ruta, encoding="utf-8-sig") as f:  # -sig: el Bloc de notas de Windows guarda con BOM
             return json.load(f)
@@ -135,25 +135,24 @@ def validar(p):
     b = p.get("busqueda")
     if not isinstance(b, dict) or not isinstance(b.get("casos"), list) or not b["casos"]:
         falla("'busqueda' necesita 'casos' con al menos un caso de búsqueda")
-    sobran = set(b) - set(motor.AJUSTES_BASE)
+    sobran = set(b) - set(puntaje.AJUSTES_BASE)
     if sobran:
-        falla("busqueda tiene claves que no existen: %s (las válidas: %s)" % (", ".join(sorted(sobran)), ", ".join(motor.AJUSTES_BASE)))
+        falla("busqueda tiene claves que no existen: %s (las válidas: %s)" % (", ".join(sorted(sobran)), ", ".join(puntaje.AJUSTES_BASE)))
     for i, c in enumerate(b["casos"], 1):
         if not isinstance(c, dict) or c.get("contrato") not in CONTRATOS or c.get("modalidad") not in MODALIDADES \
                 or c.get("salarioMinimo") is None:
             falla("busqueda.casos[%d] necesita contrato %s, modalidad %s y salarioMinimo" % (i, CONTRATOS, MODALIDADES))
         if c.get("palabras"):  # sin palabras = cualquier cargo
             texto(c["palabras"], "busqueda.casos[%d].palabras" % i)
-    error = servir.ajustes_invalidos(b)  # la misma validación que usa la página al guardar Ajustes
+    error = abrir_pagina.ajustes_invalidos(b)  # la misma validación que usa la página al guardar Ajustes
     if error:
         falla("busqueda: " + error)
     return p
 
 
 def es_ejemplo(contacto):
-    """True si algún dato de la firma sigue siendo el de perfil.ejemplo.json."""
-    with open(EJEMPLO, encoding="utf-8-sig") as f:
-        ej = json.load(f)["contacto"]
+    """True si algún dato de la firma sigue siendo el de mis_datos.ejemplo.json."""
+    ej = cargar(EJEMPLO)["contacto"]
     return any(contacto.get(k) == ej.get(k) for k in ("nombre", "telefono", "correo")) \
         or contacto["correo"].endswith(".invalid")
 
@@ -164,13 +163,13 @@ def crear(ruta, perfil, demo=False, hoy=None):
         falla("ya existe %s. No la piso: si quieres empezar de cero, bórrala tú (haz antes una copia)." % ruta)
     p = validar(perfil)
     if es_ejemplo(p["contacto"]) and not demo:
-        falla("el nombre, el teléfono o el correo de contacto siguen siendo los del ejemplo. Pon tus datos en perfil.json "
+        falla("el nombre, el teléfono o el correo de contacto siguen siendo los del ejemplo. Pon tus datos en mis_datos.json "
               "(o usa --demo para probar).")
     hoy = hoy or date.today().isoformat()
     tmp = ruta + ".nuevo"
     if os.path.exists(tmp):
         os.remove(tmp)
-    con = base.conectar(tmp, crear=True)
+    con = leer_y_guardar.conectar(tmp, crear=True)
     try:
         with con:
             orden = 0
@@ -187,7 +186,7 @@ def crear(ruta, perfil, demo=False, hoy=None):
             for pid, nombre, bloqueada, cuerpo in PLANTILLAS:
                 con.execute("INSERT INTO plantillas (id, nombre, texto, bloqueada) VALUES (?, ?, ?, ?)",
                             (pid, nombre, cuerpo.format(**datos), bloqueada))
-            base.guardar(con, "config", "ajustes", p["busqueda"])
+            leer_y_guardar.guardar(con, "config", "ajustes", p["busqueda"])
         con.close()
         if demo:
             entradas = [dict(v, fechaPostulacion=hoy) if "fechaPostulacion" in v else v for v in DEMO]
@@ -195,7 +194,7 @@ def crear(ruta, perfil, demo=False, hoy=None):
                 ruta_json = os.path.join(d, "demo.json")
                 with open(ruta_json, "w", encoding="utf-8") as f:
                     json.dump(entradas, f, ensure_ascii=False)
-                r = subprocess.run([sys.executable, os.path.join(AQUI, "crm.py"), "--db", tmp, "nuevas", ruta_json, hoy],
+                r = subprocess.run([sys.executable, os.path.join(AQUI, "comandos.py"), "--db", tmp, "nuevas", ruta_json, hoy],
                                    capture_output=True, text=True, encoding="utf-8")
             if r.returncode:
                 falla("no se pudieron cargar las vacantes de ejemplo: " + (r.stdout + r.stderr).strip())
@@ -212,13 +211,13 @@ def crear(ruta, perfil, demo=False, hoy=None):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--perfil", default=os.path.join(RAIZ, "perfil.json"))
-    ap.add_argument("--db", default=base.RUTA)
-    ap.add_argument("--demo", action="store_true", help="agrega vacantes de ejemplo y usa perfil.ejemplo.json si no hay perfil.json")
+    ap.add_argument("--perfil", default=os.path.join(RAIZ, "mis_datos.json"))
+    ap.add_argument("--db", default=leer_y_guardar.RUTA)
+    ap.add_argument("--demo", action="store_true", help="agrega vacantes de ejemplo y usa mis_datos.ejemplo.json si no hay mis_datos.json")
     a = ap.parse_args()
     ruta_perfil = a.perfil
     if a.demo and not os.path.exists(ruta_perfil):
         ruta_perfil = EJEMPLO
     crear(a.db, cargar(ruta_perfil), demo=a.demo)
     print("Listo: %s" % a.db)
-    print("Siguiente paso: abre el CRM con 'Abrir CRM.bat' (o python \"Base de datos/servir.py\").")
+    print("Siguiente paso: abre el CRM con 'Abrir CRM.bat' (o python \"Programa del CRM/abrir_pagina.py\").")

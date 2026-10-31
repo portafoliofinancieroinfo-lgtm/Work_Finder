@@ -4,8 +4,8 @@ Este archivo dice qué vacantes sirven y cómo se escriben las cartas y los mens
 **Es tuyo: ajústalo a tu búsqueda.** La tabla de la sección 1 trae ejemplos; cámbialos por tus propios descartes.
 
 Los datos del usuario están en la base del CRM, no aquí: contacto, perfil, "Datos para formularios", logros y plantillas.
-Para verlos: `python "Base de datos/crm.py" perfil`. Se cargan una sola vez desde `perfil.json` con `iniciar.py` (ver el README).
-La fuente original es tu HV (`Contexto postulante/HV.pdf`).
+Para verlos: `python "Programa del CRM/comandos.py" perfil`. Se cargan una sola vez desde `mis_datos.json` con `crear_base.py` (ver el README).
+La fuente original es tu HV (`Mi hoja de vida/HV.pdf`).
 
 ---
 
@@ -23,7 +23,7 @@ Leer la tabla **de arriba abajo; se aplica la primera fila que encaje**:
 Reglas de registro:
 - Solo lo que dice el aviso. Si falta el salario, la fecha o la modalidad, queda vacío: **nunca se estima.**
 - Si el aviso no dice la empresa: `"Importante empresa del sector"` con `"empresaId": null`.
-- El puntaje lo calcula `Base de datos/crm.py` con los Ajustes del CRM. Las de puntaje ≥ `umbralAprobar` (máximo `limitePorCorrida`)
+- El puntaje lo calcula `Programa del CRM/comandos.py` con los Ajustes del CRM. Las de puntaje ≥ `umbralAprobar` (máximo `limitePorCorrida`)
   pasan a "por aprobar"; las demás quedan "descubiertas".
 
 ## 2. Reglas para cartas, formularios y mensajes

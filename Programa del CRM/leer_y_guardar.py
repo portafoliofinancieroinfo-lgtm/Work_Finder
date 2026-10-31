@@ -1,14 +1,14 @@
-"""Base de datos del CRM: un archivo SQLite, Base de datos/finder.db.
+"""Programa del CRM del CRM: un archivo SQLite, Programa del CRM/postulaciones.db.
 
 Cada colección (vacantes, empresas, borradores, config, corridas) es una tabla (id, data) con el documento
-en JSON, igual que lo usan crm.py, motor.py y la página. Las vistas *_v sacan columnas para consultar.
+en JSON, igual que lo usan comandos.py, puntaje.py y la página. Las vistas *_v sacan columnas para consultar.
 Los datos del usuario van en tablas normales: perfil, logros, servicios y plantillas.
 """
 import json
 import os
 import sqlite3
 
-RUTA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "finder.db")
+RUTA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "postulaciones.db")
 COLECCIONES = ("vacantes", "empresas", "borradores", "config", "corridas")
 
 ESQUEMA = "".join(
@@ -59,7 +59,7 @@ def leer_uno(con, coleccion, doc_id):
 
 def guardar(con, coleccion, doc_id, data):
     """Escribe el documento completo (lo crea si no existe). Cada escritura sube `_rev` en 1: con eso la página sabe
-    si el registro cambió después de leerlo (servir.py rechaza la escritura) y no pisa lo que escribió crm.py."""
+    si el registro cambió después de leerlo (abrir_pagina.py rechaza la escritura) y no pisa lo que escribió comandos.py."""
     fila = con.execute("SELECT json_extract(data, '$._rev') FROM %s WHERE id = ?" % _col(coleccion), (doc_id,)).fetchone()
     data = dict(data, _rev=((fila[0] or 0) if fila else 0) + 1)
     con.execute("INSERT OR REPLACE INTO %s (id, data) VALUES (?, ?)" % _col(coleccion),
