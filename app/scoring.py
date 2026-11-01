@@ -1,9 +1,9 @@
-"""Gemelo en Python de puntaje.js, para calificar vacantes en las corridas.
+"""Gemelo en Python de scoring.js, para calificar vacantes en las corridas.
 
-Las reglas deben coincidir con puntaje.js. Uso desde la línea de comandos:
-    python "Programa CRM/puntaje.py" vacante.json [ajustes.json] [AAAA-MM-DD]
-    python "Programa CRM/puntaje.py" --paridad <ruta de postulaciones.db> <AAAA-MM-DD>
---paridad califica todas las vacantes de esa base con este archivo y con puntaje.js (necesita node) y dice si coinciden.
+Las reglas deben coincidir con scoring.js. Uso desde la línea de comandos:
+    python "app/scoring.py" vacante.json [ajustes.json] [AAAA-MM-DD]
+    python "app/scoring.py" --paridad <ruta de crm.db> <AAAA-MM-DD>
+--paridad califica todas las vacantes de esa base con este archivo y con scoring.js (necesita node) y dice si coinciden.
 """
 import json
 import re
@@ -60,12 +60,12 @@ def inferir_nivel(cargo):
 
 
 def num(x):
-    """x si es un número, si no None (como typeof x === "number" en puntaje.js: True no cuenta)."""
+    """x si es un número, si no None (como typeof x === "number" en scoring.js: True no cuenta)."""
     return x if isinstance(x, (int, float)) and not isinstance(x, bool) else None
 
 
 def fecha(s):
-    """La fecha de un texto AAAA-MM-DD exacto, si no None (fromisoformat acepta también "20261022"; puntaje.js no)."""
+    """La fecha de un texto AAAA-MM-DD exacto, si no None (fromisoformat acepta también "20261022"; scoring.js no)."""
     try:
         d = date.fromisoformat(s)
     except (TypeError, ValueError):
@@ -81,7 +81,7 @@ def dias_entre(desde, hasta):
 def salario_referencia(v):
     lo, hi = num(v.get("salarioMin")), num(v.get("salarioMax"))
     if lo is not None and hi is not None:
-        return int((lo + hi) / 2 + 0.5)  # igual que Math.round de puntaje.js (round() de Python va al par)
+        return int((lo + hi) / 2 + 0.5)  # igual que Math.round de scoring.js (round() de Python va al par)
     return lo if lo is not None else hi
 
 
@@ -201,16 +201,16 @@ def puntaje(v, ajustes=None, hoy=None):
 
 
 def paridad(ruta_db, hoy):
-    """Compara puntaje.py con puntaje.js sobre todas las vacantes de una base. Devuelve [(id, total_py, total_js)] distintas."""
+    """Compara scoring.py con scoring.js sobre todas las vacantes de una base. Devuelve [(id, total_py, total_js)] distintas."""
     import os
     import sqlite3
     import subprocess
-    import leer_y_guardar
+    import storage
     con = sqlite3.connect("file:%s?mode=ro" % ruta_db.replace("\\", "/"), uri=True)
-    aj = leer_y_guardar.leer_uno(con, "config", "ajustes")
-    vs = leer_y_guardar.leer(con, "vacantes")
+    aj = storage.leer_uno(con, "config", "ajustes")
+    vs = storage.leer(con, "vacantes")
     con.close()
-    js = os.path.join(os.path.dirname(os.path.abspath(__file__)), "puntaje.js")
+    js = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scoring.js")
     prog = ("const M = require(process.argv[1]); const e = JSON.parse(require('fs').readFileSync(0, 'utf8'));"
             "const o = {}; for (const i in e.vs) o[i] = M.puntaje(e.vs[i], e.aj, e.hoy); process.stdout.write(JSON.stringify(o));")
     salida = subprocess.run(["node", "-e", prog, js], input=json.dumps({"vs": vs, "aj": aj, "hoy": hoy}, ensure_ascii=False),
@@ -227,8 +227,8 @@ if __name__ == "__main__":
         if len(sys.argv) != 4:
             sys.exit(__doc__)
         malas = paridad(sys.argv[2], sys.argv[3])
-        print("Paridad OK: puntaje.py y puntaje.js dan lo mismo." if not malas else
-              "DIFERENCIAS (id, puntaje.py, puntaje.js): %s" % malas)
+        print("Paridad OK: scoring.py y scoring.js dan lo mismo." if not malas else
+              "DIFERENCIAS (id, scoring.py, scoring.js): %s" % malas)
         sys.exit(1 if malas else 0)
     with open(sys.argv[1], encoding="utf-8") as f:
         vac = json.load(f)

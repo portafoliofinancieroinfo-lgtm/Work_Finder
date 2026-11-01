@@ -1,11 +1,11 @@
 # Tus datos nunca se suben
-mis_datos.json
-Programa CRM/postulaciones.db
-Programa CRM/postulaciones.db-*
-Programa CRM/postulaciones.db.nuevo
-Programa CRM/postulaciones (*.db
-Mi hoja de vida/*
-!Mi hoja de vida/LEEME.md
+profile.json
+app/crm.db
+app/crm.db-*
+app/crm.db.nuevo
+app/crm (*.db
+resume/*
+!resume/README.md
 *.local.json
 .claude/settings.local.json
 

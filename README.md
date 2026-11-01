@@ -4,47 +4,47 @@ CRM de postulaciones de empleo que corre en tu computador y se opera con [Claude
 Guarda cada vacante, calcula un puntaje según lo que tú buscas, escribe las cartas y los seguimientos, y deja en el
 historial **quién autorizó cada envío**. Claude propone; tú dices "sí".
 
-- Programa CRM local en SQLite (un archivo). Sin nube, sin cuentas, sin dependencias: solo Python.
+- app local en SQLite (un archivo). Sin nube, sin cuentas, sin dependencias: solo Python.
 - Página del CRM en `http://localhost:8765` (embudo, vacantes, borradores, ajustes).
-- Claude no escribe la base a mano: todo pasa por `comandos.py`, con validaciones y transacciones (o se guarda todo, o nada).
-- Hooks que bloquean escribir la base por fuera de `comandos.py` y piden tu confirmación antes de cada correo enviado.
+- Claude no escribe la base a mano: todo pasa por `cli.py`, con validaciones y transacciones (o se guarda todo, o nada).
+- Hooks que bloquean escribir la base por fuera de `cli.py` y piden tu confirmación antes de cada correo enviado.
 
 ## Requisitos
 
 - Python 3.9 o superior (solo biblioteca estándar).
 - Para usar las acciones con Claude: [Claude Code](https://claude.com/claude-code) y la extensión Claude in Chrome, con tus sesiones
   abiertas en Gmail y en tus portales de empleo. Para solo ver el CRM no hace falta nada de esto.
-- Opcional: Node.js, para que las pruebas comparen el puntaje de `puntaje.js` con el de `puntaje.py`.
+- Opcional: Node.js, para que las pruebas comparen el puntaje de `scoring.js` con el de `scoring.py`.
 - **macOS / Linux:** los hooks de `.claude/settings.json` llaman a `python`. Si en tu equipo solo existe `python3`, cambia `python`
   por `python3` en ese archivo. Si no, los hooks fallan sin bloquear y las protecciones quedan apagadas.
 
 ## Probarlo en 1 minuto (sin tus datos)
 
 ```bash
-python "Programa CRM/crear_base.py" --demo
-python "Programa CRM/abrir_pagina.py"
+python "app/init_db.py" --demo
+python "app/server.py"
 ```
 
 Se crea una base con una persona y cuatro vacantes inventadas, y se abre `http://localhost:8765`.
-Borra `Programa CRM/postulaciones.db` antes de crear la tuya.
+Borra `app/crm.db` antes de crear la tuya.
 
 ## Montarlo con tus datos
 
 ### Paso 1. Reúne tus documentos
 
-1. Tu **hoja de vida de 2 páginas** en PDF. Guárdala como `Mi hoja de vida/HV.pdf`: es la que se adjunta en las postulaciones por correo.
+1. Tu **hoja de vida de 2 páginas** en PDF. Guárdala como `resume/cv.pdf`: es la que se adjunta en las postulaciones por correo.
 2. Tu hoja de vida completa (opcional), para sacar logros y fechas exactas.
 3. Una lista de **3 a 5 logros con cifras reales** (qué hiciste, cuánto, en qué empresa). Las cartas usan uno solo por vacante, el más afín al cargo.
 4. Tus **datos de formularios**: ciudad, aspiración salarial, nivel de inglés, software que manejas, si estás autorizado para trabajar donde buscas.
 5. Qué buscas: **palabras clave** del cargo, **modalidad** (remoto, en tu ciudad, con mudanza), **contrato** (tiempo completo o parcial) y el **salario mínimo** con el que sí te mueves.
 
-### Paso 2. Llena `mis_datos.json`
+### Paso 2. Llena `profile.json`
 
 ```bash
-python "Programa CRM/crear_base.py" --plantilla
+python "app/init_db.py" --plantilla
 ```
 
-Eso crea `mis_datos.json` con datos de ejemplo. Cámbialos por los tuyos. `mis_datos.json` está en `.gitignore`: no se sube.
+Eso crea `profile.json` con datos de ejemplo. Cámbialos por los tuyos. `profile.json` está en `.gitignore`: no se sube.
 
 | Sección | Qué lleva | Obligatorio |
 |---|---|---|
@@ -65,30 +65,30 @@ Cada **caso de búsqueda** dice qué vacantes aceptas:
 - `modalidad`: `remoto`, `ciudad` (presencial o híbrido en tu ciudad), `remoto_ciudad`, `mudanza` o `cualquiera`.
 - `salarioMinimo`: pesos al mes. Una vacante por debajo no puntúa en lo económico.
 
-Con Claude Code puedes saltarte la edición a mano: abre la carpeta, escribe **"Configurar"** y Claude te entrevista y llena `mis_datos.json`
+Con Claude Code puedes saltarte la edición a mano: abre la carpeta, escribe **"Configurar"** y Claude te entrevista y llena `profile.json`
 (Acción 0 de `CLAUDE.md`). Nunca inventa datos: te los pregunta.
 
 ### Paso 3. Crea tu base
 
 ```bash
-python "Programa CRM/crear_base.py"
+python "app/init_db.py"
 ```
 
 Revisa que todo quedó bien:
 
 ```bash
-python "Programa CRM/comandos.py" perfil
+python "app/cli.py" perfil
 ```
 
-`crear_base.py` nunca pisa una base que ya existe. Se detiene si tu nombre, teléfono o correo siguen siendo los del ejemplo, si dejaste
+`init_db.py` nunca pisa una base que ya existe. Se detiene si tu nombre, teléfono o correo siguen siendo los del ejemplo, si dejaste
 un `<marcador>` sin llenar o si un ajuste de búsqueda tiene un tipo o un nombre que no existe.
 
 ### Paso 4. Abre el CRM
 
-Doble clic en `Abrir CRM.bat` (Windows) o:
+Doble clic en `start.bat` (Windows) o:
 
 ```bash
-python "Programa CRM/abrir_pagina.py"
+python "app/server.py"
 ```
 
 Se abre `http://localhost:8765`. Solo escucha en tu equipo (127.0.0.1). En la pestaña **Ajustes** puedes cambiar después los casos de búsqueda.
@@ -119,39 +119,39 @@ Necesitas crear en Gmail las etiquetas que usa la Acción 1 (Postulaciones, Acti
 **Lo tuyo** (lo que abres o llenas tú):
 
 ```
-Abrir CRM.bat                  doble clic: abre el CRM en el navegador
-mis_datos.json                 tus datos (lo crea crear_base.py --plantilla; no se sube a git)
-Mi hoja de vida/               tu HV.pdf de 2 páginas (no se sube a git)
-README.md                      esta guía
+start.bat      doble clic: abre el CRM en el navegador
+profile.json   tus datos (lo crea init_db.py --plantilla; no se sube a git)
+resume/        tu cv.pdf de 2 páginas (no se sube a git)
+README.md      esta guía
 ```
 
 **El programa** (no hace falta abrirlo):
 
 ```
-Programa CRM/
-  postulaciones.db             la base: vacantes, empresas, historial (no se sube a git)
-  pagina.html                  la página del CRM
-  abrir_pagina.py              la sirve en localhost (lo usa Abrir CRM.bat)
-  comandos.py                  los comandos que usa Claude; único camino para escribir la base
-  crear_base.py                crea postulaciones.db desde mis_datos.json
-  puntaje.py   puntaje.js      calculan el puntaje de cada vacante (gemelos: toda regla cambia en los dos)
-  leer_y_guardar.py            lee y guarda en la base (esquema SQLite)
-  pruebas.py                   ~30 pruebas, sobre una base de ejemplo temporal
+app/
+  crm.db                    la base: vacantes, empresas, historial (no se sube a git)
+  index.html                la página del CRM
+  server.py                 la sirve en localhost (lo usa start.bat)
+  cli.py                    los comandos que usa Claude; único camino para escribir la base
+  init_db.py                crea crm.db desde profile.json
+  scoring.py   scoring.js   calculan el puntaje de cada vacante (gemelos: toda regla cambia en los dos)
+  storage.py                lee y guarda en la base (esquema SQLite)
+  tests.py                  ~30 pruebas, sobre una base de ejemplo temporal
 ```
 
 **Lo de Claude** (instrucciones y protecciones):
 
 ```
 .claude/
-  CLAUDE.md          todas las instrucciones: prohibiciones, acciones, qué vacantes sirven, la base y el código
-  protecciones.py    la base solo se escribe con comandos.py y pide tu sí antes de cada correo o adjunto
-  settings.json      activa protecciones.py
+  CLAUDE.md       todas las instrucciones: prohibiciones, acciones, qué vacantes sirven, la base y el código
+  guard.py        la base solo se escribe con cli.py y pide tu sí antes de cada correo o adjunto
+  settings.json   activa guard.py
 ```
 
 ## Pruebas
 
 ```bash
-python "Programa CRM/pruebas.py"
+python "app/tests.py"
 ```
 
 Crean su propia base de ejemplo en una carpeta temporal; nunca tocan la tuya.
@@ -160,12 +160,12 @@ Crean su propia base de ejemplo en una carpeta temporal; nunca tocan la tuya.
 
 El puntaje (0 a 100) suma el tipo de perfil, la experiencia que piden, el salario frente a tu mínimo, la modalidad y qué tan reciente es el aviso;
 una alerta de estafa o un requisito excluyente lo dejan en 0. Los tipos de perfil
-que reconoce hoy son `Auditoría/Revisoría`, `Contable/Financiero`, `QA` y `Otro` (`PUNTOS_PERFIL` en `puntaje.py` y `puntaje.js`, y
-las listas de `pagina.html`). Si buscas en otro rubro, cambia esos nombres **en los tres archivos a la vez** y corre las pruebas.
+que reconoce hoy son `Auditoría/Revisoría`, `Contable/Financiero`, `QA` y `Otro` (`PUNTOS_PERFIL` en `scoring.py` y `scoring.js`, y
+las listas de `index.html`). Si buscas en otro rubro, cambia esos nombres **en los tres archivos a la vez** y corre las pruebas.
 
 ## Privacidad
 
-- `postulaciones.db`, `mis_datos.json` y `Mi hoja de vida/` están en `.gitignore`: tu información no se sube.
+- `crm.db`, `profile.json` y `resume/` están en `.gitignore`: tu información no se sube.
 - Si guardas la carpeta en Drive, Dropbox u otra nube, la base viaja con ella: usa **un solo equipo a la vez** (ver "La base del CRM" en `.claude/CLAUDE.md`).
 - Antes de publicar un fork, revisa con `git status` que no haya subido nada tuyo.
 

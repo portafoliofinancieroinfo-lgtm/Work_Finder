@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/protecciones.py\""
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/guard.py\""
           }
         ]
       },
@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/protecciones.py\""
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/guard.py\""
           }
         ]
       }

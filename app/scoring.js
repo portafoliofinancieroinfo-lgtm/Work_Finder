@@ -1,6 +1,6 @@
 /*
  * Motor de calificación del CRM de postulaciones.
- * Fuente única de las reglas de puntaje y presupuesto. puntaje.py es su
+ * Fuente única de las reglas de puntaje y presupuesto. scoring.py es su
  * gemelo en Python para las corridas; si cambias una regla aquí, cámbiala allá.
  */
 (function (root) {
